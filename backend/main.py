@@ -1,5 +1,7 @@
 import io
+import json
 import os
+from typing import Optional
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -38,10 +40,15 @@ class TripRequest(BaseModel):
 
 class SignupRequest(BaseModel):
     name: str
+    breed: str
     age: str
     weight: str
-    breed: str
-    vaccination_status: str
+    rabies_vaccinated: bool
+    separation_anxiety_level: str
+    flight_comfort_level: str
+    daily_exercise_need: str
+    environment_preference: str
+    personality_archetype: str
 
 @app.get("/")
 def read_root():
@@ -50,20 +57,62 @@ def read_root():
 @app.post("/api/analyze-pet-image")
 async def analyze_pet_image(file: UploadFile = File(...)):
     if not GEMINI_API_KEY:
-        return {"breed": "Mock Breed (No API Key)"}
+        return {
+            "breed": "Mock Breed",
+            "age": "2 years",
+            "weight": "15 kg",
+            "daily_exercise_need": "Medium",
+            "environment_preference": "House with Yard",
+            "personality_archetype": "The Companion",
+            "flight_comfort_level": "Medium",
+            "separation_anxiety_level": "Low"
+        }
 
     try:
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
         model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = "Identify the dog breed in this picture. Return ONLY the breed name. If it's mixed, say 'Mixed Breed' or the dominant breeds."
+        prompt = """
+        Analyze this image of a dog and provide a JSON response with the following estimated details based on visual cues and breed characteristics:
+        {
+            "breed": "identified breed or mixed",
+            "age": "estimated age range (e.g. '2 years')",
+            "weight": "estimated weight (e.g. '25 kg')",
+            "daily_exercise_need": "Low/Medium/High",
+            "environment_preference": "Apartment/House with Yard/Farm",
+            "personality_archetype": "e.g. The Guardian, The Jester, The Athlete, The Couch Potato",
+            "flight_comfort_level": "Low/Medium/High (guess based on size/temperament)",
+            "separation_anxiety_level": "Low/Medium/High (guess based on breed)"
+        }
+        Return ONLY the JSON string, no markdown formatting.
+        """
         
         response = model.generate_content([prompt, image])
-        return {"breed": response.text.strip()}
+        text_response = response.text.strip()
+        
+        # Clean up potential markdown code blocks
+        if text_response.startswith("```json"):
+            text_response = text_response[7:]
+        if text_response.startswith("```"):
+            text_response = text_response[3:]
+        if text_response.endswith("```"):
+            text_response = text_response[:-3]
+            
+        return json.loads(text_response)
     except Exception as e:
         print(f"Error analyzing image: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return a fallback structure if parsing fails
+        return {
+            "breed": "Unknown",
+            "age": "",
+            "weight": "",
+            "daily_exercise_need": "Medium",
+            "environment_preference": "House with Yard",
+            "personality_archetype": "Unknown",
+            "flight_comfort_level": "Medium",
+            "separation_anxiety_level": "Medium"
+        }
 
 @app.post("/api/signup")
 async def signup(profile: SignupRequest):
