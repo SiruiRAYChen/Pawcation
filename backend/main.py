@@ -1,9 +1,12 @@
+import io
 import os
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
 import google.generativeai as genai
 from dotenv import load_dotenv
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image
+from pydantic import BaseModel
 
 # Load environment variables
 load_dotenv()
@@ -33,9 +36,39 @@ class TripRequest(BaseModel):
     destination: str
     pet_details: str
 
+class SignupRequest(BaseModel):
+    name: str
+    age: str
+    weight: str
+    breed: str
+    vaccination_status: str
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Pawcation API"}
+
+@app.post("/api/analyze-pet-image")
+async def analyze_pet_image(file: UploadFile = File(...)):
+    if not GEMINI_API_KEY:
+        return {"breed": "Mock Breed (No API Key)"}
+
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = "Identify the dog breed in this picture. Return ONLY the breed name. If it's mixed, say 'Mixed Breed' or the dominant breeds."
+        
+        response = model.generate_content([prompt, image])
+        return {"breed": response.text.strip()}
+    except Exception as e:
+        print(f"Error analyzing image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/signup")
+async def signup(profile: SignupRequest):
+    # In a real app, save to database
+    return {"message": "Profile created successfully", "profile": profile}
 
 @app.post("/api/plan-trip")
 async def plan_trip(request: TripRequest):
