@@ -31,7 +31,7 @@ pip install -r requirements.txt
 
 Make sure `backend/.env` contains your Gemini API key:
 ```
-GEMINI_API_KEY=AIzaSyBQgcSlOx974g3prPSEmZxcpQQe-4fkMVM
+GEMINI_API_KEY=YOUR GEMINI KEY
 PORT=5001
 ```
 
@@ -176,7 +176,7 @@ GEMINI_API_KEY=your_key_here
 ## Development Notes
 
 - **API Key Security**: The API key is now stored only in the backend `.env` file, not exposed to the frontend
-- **Model**: Currently using `gemini-2.0-flash-exp` (experimental model with latest features)
+- **Model**: Currently using `gemini-3-flash-preview` (experimental model with latest features)
 - **Image Processing**: Images are sent as base64, decoded in Python, and uploaded to Gemini
 - **Error Handling**: Comprehensive error handling for invalid images, API failures, and parsing errors
 
