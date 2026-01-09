@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import heroImage from "@/assets/hero-dog-travel.jpg";
+import { DecorativePaw } from "@/components/icons/PawIcons";
 import { Button } from "@/components/ui/button";
 import { PawPrint, Play } from "lucide-react";
-import { DecorativePaw } from "@/components/icons/PawIcons";
-import heroImage from "@/assets/hero-dog-travel.jpg";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -53,9 +53,11 @@ const HeroSection = () => {
                   Create My Paw Profile
                 </Link>
               </Button>
-              <Button variant="hero-secondary" size="xl">
-                <Play className="h-5 w-5" />
-                See how it works
+              <Button variant="hero-secondary" size="xl" asChild>
+                <a href="#how-it-works">
+                  <Play className="h-5 w-5" />
+                  See how it works
+                </a>
               </Button>
             </div>
 

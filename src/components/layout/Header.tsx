@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { PawPrint, Menu, X } from "lucide-react";
+import { Menu, PawPrint, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -37,12 +38,16 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Log In
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">
+                Log In
+              </Link>
             </Button>
-            <Button variant="paw" size="sm">
-              <PawPrint className="h-4 w-4" />
-              Start Free
+            <Button variant="paw" size="sm" asChild>
+              <Link to="/signup">
+                <PawPrint className="h-4 w-4" />
+                Start Free
+              </Link>
             </Button>
           </div>
 
@@ -78,12 +83,16 @@ const Header = () => {
                 Paw Stories
               </a>
               <div className="flex gap-2 mt-4 px-4">
-                <Button variant="ghost" size="sm" className="flex-1">
-                  Log In
+                <Button variant="ghost" size="sm" className="flex-1" asChild>
+                  <Link to="/login">
+                    Log In
+                  </Link>
                 </Button>
-                <Button variant="paw" size="sm" className="flex-1">
-                  <PawPrint className="h-4 w-4" />
-                  Start Free
+                <Button variant="paw" size="sm" className="flex-1" asChild>
+                  <Link to="/signup">
+                    <PawPrint className="h-4 w-4" />
+                    Start Free
+                  </Link>
                 </Button>
               </div>
             </nav>

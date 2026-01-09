@@ -1,6 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { PawPrint, ArrowRight, Sparkles } from "lucide-react";
 import { DecorativePaw } from "@/components/icons/PawIcons";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, PawPrint, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -42,10 +43,13 @@ const CTASection = () => {
               variant="secondary" 
               size="xl" 
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-elevated"
+              asChild
             >
-              <PawPrint className="h-5 w-5" />
-              Create My Paw Profile
-              <ArrowRight className="h-5 w-5" />
+              <Link to="/signup">
+                <PawPrint className="h-5 w-5" />
+                Create My Paw Profile
+                <ArrowRight className="h-5 w-5" />
+              </Link>
             </Button>
           </div>
 

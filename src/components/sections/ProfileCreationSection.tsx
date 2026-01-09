@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { PawPrint, Camera, Dog, Scale, Heart, Zap, MapPin, Smile } from "lucide-react";
+import { Camera, Dog, Heart, MapPin, PawPrint, Scale, Smile, Zap } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const ProfileCreationSection = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -66,9 +67,11 @@ const ProfileCreationSection = () => {
               </div>
             </div>
 
-            <Button variant="hero" size="lg">
-              <PawPrint className="h-5 w-5" />
-              Create Your Paw Profile
+            <Button variant="hero" size="lg" asChild>
+              <Link to="/signup">
+                <PawPrint className="h-5 w-5" />
+                Create Your Paw Profile
+              </Link>
             </Button>
           </div>
 
