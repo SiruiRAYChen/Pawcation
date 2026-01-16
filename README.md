@@ -1,53 +1,91 @@
-# Welcome to your Lovable project
+# 🐾 Pawcation - Pet Travel Planning App
 
-## Project info
+A full-stack application for planning pet-friendly travel with your furry companions!
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** (v16+) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Python 3.9+**
+
+### Installation
+
+1. **Clone and install dependencies:**
+```bash
+npm install
+cd backend && python3 -m pip install -r requirements.txt && cd ..
+```
+
+2. **Set up environment:**
+```bash
+cp .env.example .env
+```
+
+3. **Start the application:**
+
+**Terminal 1 - Backend:**
+```bash
+cd backend && python3 main.py
+```
+API runs on `http://localhost:8000`
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
+```
+App runs on `http://localhost:5173`
+
+## 📊 Database Models
+
+### User
+- `user_id`, `email`, `password`
+
+### Pet (linked to User)
+- Basic: name, breed, birthday, weight
+- Health: rabies vaccination, microchip
+- Behavior: separation anxiety (1-5), flight comfort (1-5), exercise needs (1-5)
+- Preferences: environment, personality archetype
+
+### Plan (linked to User)
+- Dates, trip type, destination, itinerary
+- Travel party details, budget
+
+## 🔌 API Endpoints
+
+**Users:** `/api/users` - CRUD operations  
+**Pets:** `/api/pets`, `/api/users/{id}/pets` - CRUD operations  
+**Plans:** `/api/plans`, `/api/users/{id}/plans` - CRUD operations
+
+**API Docs:** http://localhost:8000/docs
+
+## 🧪 Testing
+
+```bash
+cd backend && python3 test_api.py
+```
+
+## 💻 Frontend API Usage
+
+```typescript
+import { api } from '@/lib/api';
+
+// Create user
+const user = await api.createUser('email@example.com', 'password');
+
+// Get pets
+const pets = await api.getUserPets(userId);
+```
+
+## 🛠️ Tech Stack
+
+**Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui  
+**Backend:** Python, FastAPI, SQLAlchemy, SQLite
+
+## 📝 Development with Lovable
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
+Changes via Lovable are committed automatically. You can also edit locally and push changes
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
 ## What technologies are used for this project?
