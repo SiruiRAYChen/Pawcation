@@ -33,7 +33,7 @@ API runs on `http://localhost:8000`
 ```bash
 npm run dev
 ```
-App runs on `http://localhost:5173`
+App runs on `http://localhost:5173` (Vite default)
 
 ## 📊 Database Models
 
