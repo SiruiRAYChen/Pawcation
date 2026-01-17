@@ -2,12 +2,13 @@ from typing import List
 
 import uvicorn
 from database import get_db, init_db
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, File, UploadFile
+from gemini_service import analyze_pet_image
 from fastapi.middleware.cors import CORSMiddleware
 from models import Pet, Plan, User
 from schemas import (PetCreate, PetResponse, PetUpdate, PlanCreate,
                      PlanResponse, PlanUpdate, UserCreate, UserFull,
-                     UserResponse)
+                     UserResponse, UserLogin)
 from sqlalchemy.orm import Session
 
 app = FastAPI(title="Pawcation API", version="1.0.0")
@@ -79,6 +80,20 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return None
 
 
+@app.post("/api/users/login", response_model=UserResponse)
+def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Login user with email and password"""
+    user = db.query(User).filter(User.email == login_data.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # In production, use proper password hashing!
+    if user.password != login_data.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    return user
+
+
 # ========== PET ENDPOINTS ==========
 
 @app.post("/api/pets", response_model=PetResponse, status_code=status.HTTP_201_CREATED)
@@ -143,6 +158,23 @@ def delete_pet(pet_id: int, db: Session = Depends(get_db)):
     db.delete(pet)
     db.commit()
     return None
+
+
+@app.post("/api/pets/analyze-image")
+async def analyze_image(file: UploadFile = File(...)):
+    """Analyze a pet image and return structured data"""
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File provided is not an image.")
+
+    image_bytes = await file.read()
+    mime = file.content_type or "image/jpeg"
+    try:
+        analysis_result = analyze_pet_image(image_bytes, mime)
+        if "error" in analysis_result:
+            raise HTTPException(status_code=500, detail=analysis_result["error"])
+        return analysis_result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred during image analysis: {str(e)}")
 
 
 # ========== PLAN ENDPOINTS ==========

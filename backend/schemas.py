@@ -13,6 +13,11 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserResponse(UserBase):
     user_id: int
 
@@ -24,16 +29,13 @@ class UserResponse(UserBase):
 class PetBase(BaseModel):
     name: str
     breed: Optional[str] = None
-    birthday: Optional[date] = None
-    weight: Optional[float] = None
-    rabies_vaccinated: bool = False
-    rabies_expiration: Optional[date] = None
+    age: Optional[str] = None
+    size: Optional[str] = None
+    personality: Optional[List[str]] = None
+    health: Optional[str] = None
+    appearance: Optional[str] = None
+    rabies_expiration: Optional[str] = None
     microchip_id: Optional[str] = None
-    separation_anxiety_level: int = 3
-    flight_comfort_level: int = 3
-    daily_exercise_need: int = 3
-    environment_preference: Optional[str] = None
-    personality_archetype: Optional[str] = None
     image_url: Optional[str] = None
 
 
@@ -44,16 +46,13 @@ class PetCreate(PetBase):
 class PetUpdate(BaseModel):
     name: Optional[str] = None
     breed: Optional[str] = None
-    birthday: Optional[date] = None
-    weight: Optional[float] = None
-    rabies_vaccinated: Optional[bool] = None
-    rabies_expiration: Optional[date] = None
+    age: Optional[str] = None
+    size: Optional[str] = None
+    personality: Optional[List[str]] = None
+    health: Optional[str] = None
+    appearance: Optional[str] = None
+    rabies_expiration: Optional[str] = None
     microchip_id: Optional[str] = None
-    separation_anxiety_level: Optional[int] = None
-    flight_comfort_level: Optional[int] = None
-    daily_exercise_need: Optional[int] = None
-    environment_preference: Optional[str] = None
-    personality_archetype: Optional[str] = None
     image_url: Optional[str] = None
 
 

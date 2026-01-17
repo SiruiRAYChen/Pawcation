@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { MapPin, Compass, User } from "lucide-react";
 import { PawIcon } from "@/components/icons/PawIcon";
 
-type Tab = "plan" | "explore" | "profile";
+export type Tab = "plan" | "explore" | "profile";
 
 interface BottomNavProps {
   activeTab: Tab;

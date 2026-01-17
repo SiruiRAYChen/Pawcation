@@ -1,9 +1,10 @@
 from datetime import date
 
-from sqlalchemy import (Boolean, Column, Date, Float, ForeignKey, Integer,
-                        String, Text)
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import (Column, Date, Float, ForeignKey, Integer,
+                        String, Text, JSON)
 from sqlalchemy.orm import relationship
+
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
@@ -26,25 +27,18 @@ class Pet(Base):
     pet_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     
-    # Basic Info
+    # Basic Info from Gemini
     name = Column(String, nullable=False)
-    breed = Column(String)  # Can be "Mixed" or specific breed
-    birthday = Column(Date, nullable=True)
-    weight = Column(Float)  # Weight in pounds
+    breed = Column(String, nullable=True)
+    age = Column(String, nullable=True)
+    size = Column(String, nullable=True)
+    personality = Column(JSON, nullable=True)
+    health = Column(String, nullable=True)
+    appearance = Column(String, nullable=True)
     
-    # Health & Vaccination
-    rabies_vaccinated = Column(Boolean, default=False)
-    rabies_expiration = Column(Date, nullable=True)
+    # Medical Info
+    rabies_expiration = Column(String, nullable=True)
     microchip_id = Column(String, nullable=True)
-    
-    # Behavioral Traits (scale of 1-5)
-    separation_anxiety_level = Column(Integer, default=3)  # 1=Low, 5=High
-    flight_comfort_level = Column(Integer, default=3)  # 1=Uncomfortable, 5=Very Comfortable
-    daily_exercise_need = Column(Integer, default=3)  # 1=Low, 5=High
-    
-    # Preferences
-    environment_preference = Column(String)  # e.g., "Urban", "Rural", "Beach", "Mountains"
-    personality_archetype = Column(String)  # e.g., "Energetic Explorer", "Couch Potato"
     
     # Image
     image_url = Column(String, nullable=True)

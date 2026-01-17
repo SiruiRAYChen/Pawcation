@@ -12,16 +12,13 @@ export interface Pet {
   user_id: number;
   name: string;
   breed?: string;
-  birthday?: string;
-  weight?: number;
-  rabies_vaccinated: boolean;
+  age?: string; // Changed from birthday
+  size?: string; // Changed from weight
+  personality?: string[];
+  health?: string;
+  appearance?: string;
   rabies_expiration?: string;
   microchip_id?: string;
-  separation_anxiety_level: number;
-  flight_comfort_level: number;
-  daily_exercise_need: number;
-  environment_preference?: string;
-  personality_archetype?: string;
   image_url?: string;
 }
 
@@ -100,6 +97,13 @@ class PawcationAPI {
     return this.request<User[]>('/api/users');
   }
 
+  async loginUser(email: string, password: string): Promise<User> {
+    return this.request<User>('/api/users/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+  }
+
   async deleteUser(userId: number): Promise<void> {
     return this.request<void>(`/api/users/${userId}`, {
       method: 'DELETE',
@@ -108,19 +112,19 @@ class PawcationAPI {
 
   // ========== PET ENDPOINTS ==========
 
-  async createPet(pet: Omit<Pet, 'pet_id'>): Promise<Pet> {
+  async getUserPets(userId: number): Promise<Pet[]> {
+    return this.request<Pet[]>(`/api/users/${userId}/pets`);
+  }
+
+  async createPet(petData: Omit<Pet, 'pet_id'>): Promise<Pet> {
     return this.request<Pet>('/api/pets', {
       method: 'POST',
-      body: JSON.stringify(pet),
+      body: JSON.stringify(petData),
     });
   }
 
   async getPet(petId: number): Promise<Pet> {
     return this.request<Pet>(`/api/pets/${petId}`);
-  }
-
-  async getUserPets(userId: number): Promise<Pet[]> {
-    return this.request<Pet[]>(`/api/users/${userId}/pets`);
   }
 
   async updatePet(petId: number, updates: Partial<Pet>): Promise<Pet> {
@@ -134,6 +138,23 @@ class PawcationAPI {
     return this.request<void>(`/api/pets/${petId}`, {
       method: 'DELETE',
     });
+  }
+
+  async analyzePetImage(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.baseUrl}/api/pets/analyze-image`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `API Error: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 
   // ========== PLAN ENDPOINTS ==========

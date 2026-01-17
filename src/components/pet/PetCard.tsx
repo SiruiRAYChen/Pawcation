@@ -1,29 +1,29 @@
 import { motion } from "framer-motion";
-import { Edit2, Syringe, Microchip } from "lucide-react";
+import { Edit2, Syringe, Microchip, HeartPulse, Paintbrush } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { Pet } from "@/lib/api";
+import sampleCorgi from "@/assets/sample-pet-corgi.png"; // Default image
 
 interface PetCardProps {
-  name: string;
-  breed: string;
-  weight: string;
-  image: string;
-  personality?: string[];
-  rabiesExp?: string;
-  microchipId?: string;
+  pet: Pet;
   onEdit?: () => void;
 }
 
-export const PetCard = ({
-  name,
-  breed,
-  weight,
-  image,
-  personality = [],
-  rabiesExp,
-  microchipId,
-  onEdit,
-}: PetCardProps) => {
+export const PetCard = ({ pet, onEdit }: PetCardProps) => {
+  const {
+    name,
+    breed,
+    size,
+    image_url,
+    personality = [],
+    rabies_expiration,
+    microchip_id,
+    health,
+    appearance,
+    age,
+  } = pet;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -32,14 +32,14 @@ export const PetCard = ({
     >
       <div className="relative h-48 overflow-hidden">
         <img
-          src={image}
+          src={image_url || sampleCorgi}
           alt={name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
           <h3 className="text-2xl font-bold text-card">{name}</h3>
-          <p className="text-card/80 font-medium">{breed}</p>
+          <p className="text-card/80 font-medium">{breed} {age && `(${age})`}</p>
         </div>
         {onEdit && (
           <button
@@ -55,7 +55,7 @@ export const PetCard = ({
         <div className="flex items-center gap-2">
           <PawIcon className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-muted-foreground">
-            {weight}
+            {size}
           </span>
         </div>
 
@@ -68,20 +68,35 @@ export const PetCard = ({
             ))}
           </div>
         )}
-
-        <div className="pt-2 border-t border-border space-y-2">
-          {rabiesExp && (
-            <div className="flex items-center gap-2 text-sm">
-              <Syringe className="w-4 h-4 text-success" />
-              <span className="text-muted-foreground">Rabies:</span>
-              <span className="font-medium">{rabiesExp}</span>
+        
+        <div className="space-y-2 text-sm">
+          {health && (
+            <div className="flex items-center gap-2">
+              <HeartPulse className="w-4 h-4 text-blue-500" />
+              <span className="text-muted-foreground">{health}</span>
             </div>
           )}
-          {microchipId && (
+          {appearance && (
+            <div className="flex items-center gap-2">
+              <Paintbrush className="w-4 h-4 text-purple-500" />
+              <span className="text-muted-foreground">{appearance}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-2 border-t border-border space-y-2">
+          {rabies_expiration && (
+            <div className="flex items-center gap-2 text-sm">
+              <Syringe className="w-4 h-4 text-success" />
+              <span className="text-muted-foreground">Rabies Exp:</span>
+              <span className="font-medium">{new Date(rabies_expiration).toLocaleDateString()}</span>
+            </div>
+          )}
+          {microchip_id && (
             <div className="flex items-center gap-2 text-sm">
               <Microchip className="w-4 h-4 text-accent" />
-              <span className="text-muted-foreground">Chip:</span>
-              <span className="font-mono text-xs">{microchipId}</span>
+              <span className="text-muted-foreground">Chip ID:</span>
+              <span className="font-mono text-xs">{microchip_id}</span>
             </div>
           )}
         </div>
