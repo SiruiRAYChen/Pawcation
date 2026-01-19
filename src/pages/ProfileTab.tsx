@@ -4,23 +4,30 @@ import { motion } from "framer-motion";
 import { Plus, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PetCard } from "@/components/pet/PetCard";
+import { AddPetModal } from "@/components/pet/AddPetModal";
 import { PawIcon } from "@/components/icons/PawIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 export const ProfileTab = () => {
   const { user, email, logout } = useAuth();
   const navigate = useNavigate();
+  const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
 
-  const { data: pets, isLoading, error } = useQuery({
+  const { data: pets, isLoading, error, refetch } = useQuery({
     queryKey: ["pets", user?.user_id],
     queryFn: () => api.getUserPets(user!.user_id),
     enabled: !!user,
   });
 
   const handleAddPetClick = () => {
-    navigate('/add-pet');
+    setIsAddPetModalOpen(true);
+  };
+
+  const handlePetAdded = () => {
+    refetch(); // Refresh the pets list
   };
 
   const handleLogout = () => {
@@ -115,6 +122,13 @@ export const ProfileTab = () => {
           </div>
         )}
       </div>
+
+      {/* Add Pet Modal */}
+      <AddPetModal 
+        isOpen={isAddPetModalOpen} 
+        onClose={() => setIsAddPetModalOpen(false)}
+        onPetAdded={handlePetAdded}
+      />
     </div>
   );
 };

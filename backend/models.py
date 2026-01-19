@@ -41,7 +41,8 @@ class Pet(Base):
     microchip_id = Column(String, nullable=True)
     
     # Image
-    image_url = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)  # Full image for AI analysis
+    avatar_url = Column(String, nullable=True)  # Cropped circular avatar
     
     # Relationship
     owner = relationship("User", back_populates="pets")

@@ -19,7 +19,8 @@ export interface Pet {
   appearance?: string;
   rabies_expiration?: string;
   microchip_id?: string;
-  image_url?: string;
+  image_url?: string; // Full image for AI analysis
+  avatar_url?: string; // Cropped circular avatar for display
 }
 
 export interface Plan {

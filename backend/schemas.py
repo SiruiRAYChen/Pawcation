@@ -36,7 +36,8 @@ class PetBase(BaseModel):
     appearance: Optional[str] = None
     rabies_expiration: Optional[str] = None
     microchip_id: Optional[str] = None
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None  # Full image for AI analysis
+    avatar_url: Optional[str] = None  # Cropped circular avatar
 
 
 class PetCreate(PetBase):
@@ -54,6 +55,7 @@ class PetUpdate(BaseModel):
     rabies_expiration: Optional[str] = None
     microchip_id: Optional[str] = None
     image_url: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class PetResponse(PetBase):
