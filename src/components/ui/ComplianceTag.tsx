@@ -1,7 +1,7 @@
-import { Check, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, Check, X } from "lucide-react";
 
-type ComplianceStatus = "approved" | "conditional" | "restricted";
+type ComplianceStatus = "approved" | "conditional" | "notAllowed";
 
 interface ComplianceTagProps {
   status: ComplianceStatus;
@@ -20,9 +20,9 @@ const statusConfig = {
     text: "Conditional",
     className: "bg-warning/10 text-warning-foreground border-warning/20",
   },
-  restricted: {
+  notAllowed: {
     icon: X,
-    text: "Restricted",
+    text: "Not Allowed",
     className: "bg-destructive/10 text-destructive border-destructive/20",
   },
 };

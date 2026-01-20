@@ -45,6 +45,43 @@ export interface UserFull extends User {
   plans: Plan[];
 }
 
+// Itinerary types
+export interface ItineraryAlert {
+  type: "weather" | "warning";
+  message: string;
+}
+
+export interface ItineraryItem {
+  id: string;
+  time: "morning" | "afternoon" | "evening";
+  type: "transport" | "accommodation" | "dining" | "activity";
+  title: string;
+  subtitle: string;
+  compliance: "approved" | "conditional" | "notAllowed";
+  complianceNote?: string;
+}
+
+export interface ItineraryDay {
+  date: string;
+  dayLabel: string;
+  alerts?: ItineraryAlert[];
+  items: ItineraryItem[];
+}
+
+export interface ItineraryResponse {
+  days: ItineraryDay[];
+}
+
+export interface ItineraryGenerateRequest {
+  origin: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  pet_id: number;
+  num_adults: number;
+  num_children: number;
+}
+
 // API Client
 class PawcationAPI {
   private baseUrl: string;
@@ -185,6 +222,30 @@ class PawcationAPI {
   async deletePlan(planId: number): Promise<void> {
     return this.request<void>(`/api/plans/${planId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async generateItinerary(request: ItineraryGenerateRequest): Promise<ItineraryResponse> {
+    return this.request<ItineraryResponse>('/api/plans/generate-itinerary', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async savePlan(planData: {
+    user_id: number;
+    origin: string;
+    destination: string;
+    start_date: string;
+    end_date: string;
+    pet_ids: string;
+    num_adults: number;
+    num_children: number;
+    detailed_itinerary: string;
+  }): Promise<Plan> {
+    return this.request<Plan>('/api/plans/save', {
+      method: 'POST',
+      body: JSON.stringify(planData),
     });
   }
 }

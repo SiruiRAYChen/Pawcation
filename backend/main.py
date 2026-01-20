@@ -2,13 +2,14 @@ from typing import List
 
 import uvicorn
 from database import get_db, init_db
-from fastapi import Depends, FastAPI, HTTPException, status, File, UploadFile
-from gemini_service import analyze_pet_image
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from gemini_service import analyze_pet_image, generate_travel_itinerary
 from models import Pet, Plan, User
-from schemas import (PetCreate, PetResponse, PetUpdate, PlanCreate,
-                     PlanResponse, PlanUpdate, UserCreate, UserFull,
-                     UserResponse, UserLogin)
+from schemas import (ItineraryGenerateRequest, ItineraryResponse, PetCreate,
+                     PetResponse, PetUpdate, PlanCreate, PlanResponse,
+                     PlanSaveRequest, PlanUpdate, UserCreate, UserFull,
+                     UserLogin, UserResponse)
 from sqlalchemy.orm import Session
 
 app = FastAPI(title="Pawcation API", version="1.0.0")
@@ -241,6 +242,67 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
     db.delete(plan)
     db.commit()
     return None
+
+
+@app.post("/api/plans/generate-itinerary", response_model=ItineraryResponse)
+def generate_itinerary(request: ItineraryGenerateRequest, db: Session = Depends(get_db)):
+    """Generate a pet-friendly travel itinerary using Gemini AI"""
+    # Get pet information from database
+    pet = db.query(Pet).filter(Pet.pet_id == request.pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    # Prepare pet info for Gemini
+    pet_info = {
+        "name": pet.name,
+        "breed": pet.breed,
+        "age": pet.age,
+        "size": pet.size,
+        "personality": pet.personality or [],
+        "health": pet.health,
+    }
+    
+    # Generate itinerary using Gemini
+    result = generate_travel_itinerary(
+        origin=request.origin,
+        destination=request.destination,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        pet_info=pet_info,
+        num_adults=request.num_adults,
+        num_children=request.num_children,
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return result
+
+
+@app.post("/api/plans/save", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
+def save_plan(plan: PlanSaveRequest, db: Session = Depends(get_db)):
+    """Save a generated itinerary as a plan"""
+    # Verify user exists
+    user = db.query(User).filter(User.user_id == plan.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create plan from request
+    db_plan = Plan(
+        user_id=plan.user_id,
+        origin=plan.origin,
+        destination=plan.destination,
+        start_date=plan.start_date,
+        end_date=plan.end_date,
+        pet_ids=plan.pet_ids,
+        num_adults=plan.num_adults,
+        num_children=plan.num_children,
+        detailed_itinerary=plan.detailed_itinerary,
+    )
+    db.add(db_plan)
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
 
 
 if __name__ == "__main__":

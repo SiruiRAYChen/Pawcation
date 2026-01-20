@@ -86,6 +86,18 @@ class PlanCreate(PlanBase):
     user_id: int
 
 
+class PlanSaveRequest(BaseModel):
+    user_id: int
+    origin: str
+    destination: str
+    start_date: date
+    end_date: date
+    pet_ids: str
+    num_adults: int = 2
+    num_children: int = 0
+    detailed_itinerary: str  # JSON string of itinerary
+
+
 class PlanUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -130,3 +142,40 @@ class UserFull(UserResponse):
 
     class Config:
         from_attributes = True
+
+
+# Itinerary Generation Schemas
+class ItineraryGenerateRequest(BaseModel):
+    origin: str
+    destination: str
+    start_date: str
+    end_date: str
+    pet_id: int
+    num_adults: int = 2
+    num_children: int = 0
+
+
+class ItineraryAlert(BaseModel):
+    type: str
+    message: str
+
+
+class ItineraryItem(BaseModel):
+    id: str
+    time: str
+    type: str
+    title: str
+    subtitle: str
+    compliance: str
+    complianceNote: Optional[str] = None
+
+
+class ItineraryDay(BaseModel):
+    date: str
+    dayLabel: str
+    alerts: Optional[List[ItineraryAlert]] = None
+    items: List[ItineraryItem]
+
+
+class ItineraryResponse(BaseModel):
+    days: List[ItineraryDay]

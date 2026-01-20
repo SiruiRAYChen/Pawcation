@@ -1,120 +1,170 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin } from "lucide-react";
-import { TripSearchForm, TripSearchData } from "@/components/plan/TripSearchForm";
-import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
-import { Button } from "@/components/ui/button";
-import { PawIcon } from "@/components/icons/PawIcon";
 import heroDog from "@/assets/hero-dog.png";
-
-// Sample itinerary data
-const sampleItinerary = [
-  {
-    date: "Sat, Feb 15",
-    dayLabel: "Travel Day",
-    items: [
-      {
-        id: "1",
-        time: "morning" as const,
-        type: "transport" as const,
-        title: "United Airlines UA234",
-        subtitle: "SFO → LAX • 1h 25m",
-        compliance: "approved" as const,
-        complianceNote: "Buddy fits in cabin carrier (under 20 lbs)",
-      },
-      {
-        id: "2",
-        time: "afternoon" as const,
-        type: "accommodation" as const,
-        title: "Kimpton Hotel Palomar",
-        subtitle: "Check-in at 3:00 PM",
-        compliance: "approved" as const,
-        complianceNote: "No pet fee, water bowl provided",
-      },
-      {
-        id: "3",
-        time: "evening" as const,
-        type: "dining" as const,
-        title: "The Dog Cafe LA",
-        subtitle: "Pet-friendly patio dining",
-        compliance: "approved" as const,
-      },
-    ],
-  },
-  {
-    date: "Sun, Feb 16",
-    dayLabel: "Beach Day",
-    alerts: [
-      {
-        type: "weather" as const,
-        message: "🌡️ High of 85°F — Pack extra water for Buddy!",
-      },
-    ],
-    items: [
-      {
-        id: "4",
-        time: "morning" as const,
-        type: "activity" as const,
-        title: "Huntington Dog Beach",
-        subtitle: "Off-leash beach paradise",
-        compliance: "approved" as const,
-      },
-      {
-        id: "5",
-        time: "afternoon" as const,
-        type: "dining" as const,
-        title: "Lazy Dog Restaurant",
-        subtitle: "Lunch with pup menu",
-        compliance: "conditional" as const,
-        complianceNote: "Dogs allowed on patio only",
-      },
-      {
-        id: "6",
-        time: "evening" as const,
-        type: "activity" as const,
-        title: "Santa Monica Pier",
-        subtitle: "Evening stroll",
-        compliance: "conditional" as const,
-        complianceNote: "Dogs must be leashed, no pets in arcade",
-      },
-    ],
-  },
-  {
-    date: "Mon, Feb 17",
-    dayLabel: "Return Home",
-    items: [
-      {
-        id: "7",
-        time: "morning" as const,
-        type: "accommodation" as const,
-        title: "Kimpton Hotel Palomar",
-        subtitle: "Check-out by 11:00 AM",
-        compliance: "approved" as const,
-      },
-      {
-        id: "8",
-        time: "afternoon" as const,
-        type: "transport" as const,
-        title: "United Airlines UA567",
-        subtitle: "LAX → SFO • 1h 20m",
-        compliance: "approved" as const,
-      },
-    ],
-  },
-];
+import { PawIcon } from "@/components/icons/PawIcon";
+import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
+import { TripSearchData, TripSearchForm } from "@/components/plan/TripSearchForm";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { api, ItineraryDay, Plan } from "@/lib/api";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, Calendar, Loader2, MapPin, Save } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const PlanTab = () => {
   const [showItinerary, setShowItinerary] = useState(false);
   const [tripData, setTripData] = useState<TripSearchData | null>(null);
+  const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedPlans, setSavedPlans] = useState<Plan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSearch = (data: TripSearchData) => {
+  useEffect(() => {
+    const loadPlans = async () => {
+      if (!user?.user_id) {
+        setIsLoadingPlans(false);
+        return;
+      }
+      try {
+        const plans = await api.getUserPlans(user.user_id);
+        setSavedPlans(plans);
+      } catch (error) {
+        console.error("Failed to load plans:", error);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    };
+    loadPlans();
+  }, [user]);
+
+  const handleSearch = async (data: TripSearchData) => {
+    if (!data.selectedPet) {
+      toast({
+        title: "No pet selected",
+        description: "Please select a pet to travel with",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.origin || !data.destination || !data.startDate || !data.endDate) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTripData(data);
+    setIsGenerating(true);
     setShowItinerary(true);
+
+    try {
+      const response = await api.generateItinerary({
+        origin: data.origin,
+        destination: data.destination,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        pet_id: data.selectedPet.pet_id!,
+        num_adults: data.adults,
+        num_children: data.children,
+      });
+
+      setItinerary(response.days);
+      toast({
+        title: "Itinerary generated! 🎉",
+        description: `Your pet-friendly trip to ${data.destination} is ready`,
+      });
+    } catch (error) {
+      console.error("Failed to generate itinerary:", error);
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Failed to generate itinerary. Please try again.",
+        variant: "destructive",
+      });
+      setShowItinerary(false);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleBack = () => {
     setShowItinerary(false);
   };
+
+  const handleSavePlan = async () => {
+    if (!user?.user_id || !tripData?.selectedPet || itinerary.length === 0) {
+      toast({
+        title: "Cannot save",
+        description: "Missing required information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const savedPlan = await api.savePlan({
+        user_id: user.user_id,
+        origin: tripData.origin,
+        destination: tripData.destination,
+        start_date: tripData.startDate,
+        end_date: tripData.endDate,
+        pet_ids: String(tripData.selectedPet.pet_id),
+        num_adults: tripData.adults,
+        num_children: tripData.children,
+        detailed_itinerary: JSON.stringify({ days: itinerary }),
+      });
+
+      setSavedPlans([...savedPlans, savedPlan]);
+      toast({
+        title: "Trip saved! 🎉",
+        description: "Your itinerary has been saved to your plans",
+      });
+    } catch (error) {
+      console.error("Failed to save plan:", error);
+      toast({
+        title: "Save failed",
+        description: error instanceof Error ? error.message : "Failed to save plan",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleViewPlan = (plan: Plan) => {
+    try {
+      const parsedItinerary = JSON.parse(plan.detailed_itinerary || "{}");
+      setItinerary(parsedItinerary.days || []);
+      setTripData({
+        origin: plan.origin || "",
+        destination: plan.destination || "",
+        startDate: plan.start_date,
+        endDate: plan.end_date,
+        selectedPet: null,
+        adults: plan.num_adults,
+        children: plan.num_children,
+      });
+      setShowItinerary(true);
+    } catch (error) {
+      console.error("Failed to parse plan:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load saved plan",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Separate plans into upcoming and past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingPlans = savedPlans.filter(plan => new Date(plan.start_date) >= today);
+  const pastPlans = savedPlans.filter(plan => new Date(plan.start_date) < today);
 
   return (
     <div className="min-h-screen pb-24">
@@ -167,24 +217,74 @@ export const PlanTab = () => {
               <TripSearchForm onSearch={handleSearch} />
             </div>
 
-            {/* Past Trips */}
-            <div className="px-4 mt-6">
-              <h2 className="text-lg font-bold text-foreground mb-3">Recent Adventures</h2>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card rounded-xl p-4 border border-border shadow-paw"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-accent" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">San Diego Beach Trip</p>
-                    <p className="text-sm text-muted-foreground">Jan 20-22, 2024 • with Buddy</p>
+            {/* Saved Plans */}
+            <div className="px-4 mt-6 space-y-6">
+              {/* Upcoming Trips */}
+              {upcomingPlans.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-bold text-foreground mb-3">Upcoming Trips</h2>
+                  <div className="space-y-3">
+                    {upcomingPlans.map((plan) => (
+                      <motion.div
+                        key={plan.plan_id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-card rounded-xl p-4 border border-border shadow-paw cursor-pointer hover:shadow-paw-lg transition-shadow"
+                        onClick={() => handleViewPlan(plan)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Calendar className="w-6 h-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold">{plan.destination}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(plan.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(plan.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
-              </motion.div>
+              )}
+
+              {/* Past Trips */}
+              {pastPlans.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-bold text-foreground mb-3">Past Trips</h2>
+                  <div className="space-y-3">
+                    {pastPlans.map((plan) => (
+                      <motion.div
+                        key={plan.plan_id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-card rounded-xl p-4 border border-border shadow-paw cursor-pointer hover:shadow-paw-lg transition-shadow opacity-75"
+                        onClick={() => handleViewPlan(plan)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                            <MapPin className="w-6 h-6 text-accent" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold">{plan.destination}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(plan.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(plan.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!isLoadingPlans && savedPlans.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No saved trips yet. Create your first adventure above! ✨</p>
+                </div>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -208,10 +308,10 @@ export const PlanTab = () => {
                 </Button>
                 <div className="flex-1">
                   <h1 className="font-bold text-foreground">
-                    {tripData?.destination || "Los Angeles"} Trip
+                    {tripData?.destination || "Your"} Trip
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    3 days • Buddy the Corgi
+                    {itinerary.length} days • {tripData?.selectedPet?.name || "Your pet"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
@@ -221,10 +321,46 @@ export const PlanTab = () => {
               </div>
             </div>
 
-            {/* Itinerary */}
-            <div className="px-4 py-6">
-              <ItineraryTimeline days={sampleItinerary} />
-            </div>
+            {/* Loading State */}
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  Crafting your pet-friendly adventure...
+                </h2>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Our AI is analyzing pet-friendly accommodations, activities, and travel options for {tripData?.selectedPet?.name}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Save Button */}
+                <div className="px-4 pt-4">
+                  <Button
+                    onClick={handleSavePlan}
+                    disabled={isSaving}
+                    className="w-full gradient-primary shadow-glow"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Trip
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Itinerary */}
+                <div className="px-4 pb-6">
+                  <ItineraryTimeline days={itinerary} />
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

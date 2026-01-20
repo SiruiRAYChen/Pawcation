@@ -1,7 +1,7 @@
-import { motion } from "framer-motion";
-import { Plane, Hotel, Coffee, TreePine, AlertTriangle, Thermometer } from "lucide-react";
-import { ComplianceTag } from "@/components/ui/ComplianceTag";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { ComplianceTag } from "@/components/ui/ComplianceTag";
+import { motion } from "framer-motion";
+import { AlertTriangle, Coffee, Hotel, Plane, Thermometer, TreePine } from "lucide-react";
 
 interface TimelineItem {
   id: string;
@@ -9,7 +9,7 @@ interface TimelineItem {
   type: "transport" | "accommodation" | "dining" | "activity";
   title: string;
   subtitle: string;
-  compliance: "approved" | "conditional" | "restricted";
+  compliance: "approved" | "conditional" | "notAllowed";
   complianceNote?: string;
   icon?: React.ReactNode;
 }

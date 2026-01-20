@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { MapPin, Calendar, Users, Plane, Sparkles } from "lucide-react";
+import { PawIcon } from "@/components/icons/PawIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PawIcon } from "@/components/icons/PawIcon";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, Pet } from "@/lib/api";
+import { motion } from "framer-motion";
+import { Calendar, MapPin, Plane, Sparkles, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface TripSearchFormProps {
   onSearch: (data: TripSearchData) => void;
@@ -14,21 +16,47 @@ export interface TripSearchData {
   destination: string;
   startDate: string;
   endDate: string;
-  pets: string[];
+  selectedPet: Pet | null;
   adults: number;
   children: number;
 }
 
 export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
+  const { user } = useAuth();
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+  const [isLoadingPets, setIsLoadingPets] = useState(true);
   const [formData, setFormData] = useState<TripSearchData>({
     origin: "",
     destination: "",
     startDate: "",
     endDate: "",
-    pets: ["buddy"],
+    selectedPet: null,
     adults: 2,
     children: 0,
   });
+
+  useEffect(() => {
+    const loadPets = async () => {
+      if (!user?.user_id) {
+        setIsLoadingPets(false);
+        return;
+      }
+      try {
+        const userPets = await api.getUserPets(user.user_id);
+        setPets(userPets);
+        if (userPets.length > 0) {
+          setSelectedPet(userPets[0]);
+          setFormData(prev => ({ ...prev, selectedPet: userPets[0] }));
+        }
+      } catch (error) {
+        console.error("Failed to load pets:", error);
+      } finally {
+        setIsLoadingPets(false);
+      }
+    };
+    loadPets();
+  }, [user]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,17 +71,44 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
       className="bg-card rounded-2xl shadow-paw-lg p-5 space-y-4 border border-border"
     >
       {/* Pet Selection */}
-      <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <PawIcon className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold">Traveling with</p>
-          <p className="text-sm text-muted-foreground">Buddy the Corgi</p>
-        </div>
-        <Button type="button" variant="ghost" size="sm" className="text-primary">
-          Change
-        </Button>
+      <div className="p-3 bg-primary/5 rounded-xl border border-primary/10">
+        <p className="text-sm font-semibold mb-2">Traveling with</p>
+        {isLoadingPets ? (
+          <p className="text-sm text-muted-foreground">Loading pets...</p>
+        ) : pets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No pets added yet</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {pets.map((pet) => (
+              <button
+                key={pet.pet_id}
+                type="button"
+                onClick={() => {
+                  setSelectedPet(pet);
+                  setFormData({ ...formData, selectedPet: pet });
+                }}
+                className={`flex items-center gap-2 p-2 rounded-lg border-2 transition-all ${
+                  selectedPet?.pet_id === pet.pet_id
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                {pet.avatar_url ? (
+                  <img
+                    src={pet.avatar_url}
+                    alt={pet.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <PawIcon className="w-5 h-5 text-primary" />
+                  </div>
+                )}
+                <span className="text-sm font-medium truncate">{pet.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Origin & Destination */}
