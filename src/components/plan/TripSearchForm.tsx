@@ -104,7 +104,9 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
                     <PawIcon className="w-5 h-5 text-primary" />
                   </div>
                 )}
-                <span className="text-sm font-medium truncate">{pet.name}</span>
+                <span className="text-sm font-medium truncate flex-1 text-left">
+                  {pet.name || pet.breed || "Unnamed Pet"}
+                </span>
               </button>
             ))}
           </div>
