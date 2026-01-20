@@ -19,7 +19,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -30,6 +35,7 @@ const App = () => (
               <Route path="profile" element={<ProfileTab />} />
             </Route>
             <Route path="/add-pet" element={<AddPetPage />} />
+            <Route path="/add-pet/:petId" element={<AddPetPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

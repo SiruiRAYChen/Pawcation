@@ -15,6 +15,7 @@ export const ProfileTab = () => {
   const { user, email, logout } = useAuth();
   const navigate = useNavigate();
   const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState<any>(null);
 
   const { data: pets, isLoading, error, refetch } = useQuery({
     queryKey: ["pets", user?.user_id],
@@ -28,6 +29,16 @@ export const ProfileTab = () => {
 
   const handlePetAdded = () => {
     refetch(); // Refresh the pets list
+  };
+
+  const handleEditPet = (pet: any) => {
+    setEditingPet(pet);
+    setIsAddPetModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsAddPetModalOpen(false);
+    setEditingPet(null);
   };
 
   const handleLogout = () => {
@@ -112,7 +123,11 @@ export const ProfileTab = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <PetCard pet={pet} />
+              <PetCard 
+                pet={pet}
+                onEdit={() => handleEditPet(pet)}
+                onDelete={() => refetch()}
+              />
             </motion.div>
           ))
         )}
@@ -126,8 +141,9 @@ export const ProfileTab = () => {
       {/* Add Pet Modal */}
       <AddPetModal 
         isOpen={isAddPetModalOpen} 
-        onClose={() => setIsAddPetModalOpen(false)}
+        onClose={handleModalClose}
         onPetAdded={handlePetAdded}
+        editingPet={editingPet}
       />
     </div>
   );

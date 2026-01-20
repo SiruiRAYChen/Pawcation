@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Camera, Upload, Crop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,31 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ImageCropper } from '@/components/pet/ImageCropper';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, Pet } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-
-interface Pet {
-  user_id: number;
-  name: string;
-  breed?: string;
-  age?: string;
-  size?: string;
-  personality?: string[];
-  health?: string;
-  appearance?: string;
-  rabies_expiration?: string;
-  microchip_id?: string;
-  image_url?: string;
-  avatar_url?: string;
-}
 
 interface AddPetModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPetAdded: () => void;
+  editingPet?: Pet | null; // 新增：编辑的宠物数据
 }
 
-export function AddPetModal({ isOpen, onClose, onPetAdded }: AddPetModalProps) {
+export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetModalProps) {
   const [petData, setPetData] = useState<Partial<Pet>>({
     name: '',
     breed: '',
@@ -48,11 +34,48 @@ export function AddPetModal({ isOpen, onClose, onPetAdded }: AddPetModalProps) {
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // 当editingPet改变时，预填充数据或重置表单
+  useEffect(() => {
+    if (editingPet) {
+      setIsEditMode(true);
+      // 格式化日期
+      const formattedData = {
+        ...editingPet,
+        rabies_expiration: editingPet.rabies_expiration ? 
+          new Date(editingPet.rabies_expiration).toISOString().split('T')[0] : 
+          ''
+      };
+      setPetData(formattedData);
+      if (editingPet.avatar_url || editingPet.image_url) {
+        setPreviewImage(editingPet.avatar_url || editingPet.image_url);
+        setCroppedAvatar(editingPet.avatar_url || editingPet.image_url);
+      }
+    } else {
+      setIsEditMode(false);
+      setPetData({
+        name: '',
+        breed: '',
+        age: '',
+        size: '',
+        personality: [],
+        health: '',
+        appearance: '',
+        rabies_expiration: '',
+        microchip_id: '',
+        image_url: '',
+        avatar_url: '',
+      });
+      setPreviewImage(null);
+      setCroppedAvatar(null);
+    }
+  }, [editingPet, isOpen]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -114,20 +137,33 @@ export function AddPetModal({ isOpen, onClose, onPetAdded }: AddPetModalProps) {
     }
 
     try {
-      const newPet = await api.createPet({
-        ...petData,
-        user_id: user.user_id,
-        personality: Array.isArray(petData.personality) 
-          ? petData.personality 
-          : petData.personality ? [petData.personality] : []
-      } as Pet);
+      if (isEditMode && editingPet?.pet_id) {
+        // 更新现有宠物
+        await api.updatePet(editingPet.pet_id, {
+          ...petData,
+          user_id: user.user_id,
+          personality: Array.isArray(petData.personality) 
+            ? petData.personality 
+            : petData.personality ? [petData.personality] : []
+        } as Pet);
+        toast({ title: 'Pet updated successfully!' });
+      } else {
+        // 创建新宠物
+        await api.createPet({
+          ...petData,
+          user_id: user.user_id,
+          personality: Array.isArray(petData.personality) 
+            ? petData.personality 
+            : petData.personality ? [petData.personality] : []
+        } as Pet);
+        toast({ title: 'Pet added successfully!' });
+      }
 
-      toast({ title: 'Pet added successfully!' });
       onPetAdded();
       handleClose();
     } catch (error) {
-      console.error('Error creating pet:', error);
-      toast({ title: 'Failed to add pet', variant: 'destructive' });
+      console.error('Error saving pet:', error);
+      toast({ title: isEditMode ? 'Failed to update pet' : 'Failed to add pet', variant: 'destructive' });
     }
   };
 
@@ -175,7 +211,7 @@ export function AddPetModal({ isOpen, onClose, onPetAdded }: AddPetModalProps) {
       >
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 bg-white flex items-center justify-between p-6 border-b rounded-t-2xl">
-          <h2 className="text-lg font-semibold text-gray-900">Add a New Pet</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{isEditMode ? 'Edit Pet' : 'Add a New Pet'}</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -331,7 +367,7 @@ export function AddPetModal({ isOpen, onClose, onPetAdded }: AddPetModalProps) {
               type="submit"
               className="w-full bg-green-600 hover:bg-green-700 text-white text-sm h-10"
             >
-              Add Pet
+              {isEditMode ? 'Update Pet' : 'Add Pet'}
             </Button>
           </div>
         </form>
