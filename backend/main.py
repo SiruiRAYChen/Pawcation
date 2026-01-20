@@ -1,148 +1,247 @@
-import io
-import json
-import os
-from typing import Optional
+from typing import List
 
-import google.generativeai as genai
-from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+import uvicorn
+from database import get_db, init_db
+from fastapi import Depends, FastAPI, HTTPException, status, File, UploadFile
+from gemini_service import analyze_pet_image
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
-from pydantic import BaseModel
+from models import Pet, Plan, User
+from schemas import (PetCreate, PetResponse, PetUpdate, PlanCreate,
+                     PlanResponse, PlanUpdate, UserCreate, UserFull,
+                     UserResponse, UserLogin)
+from sqlalchemy.orm import Session
 
-# Load environment variables
-load_dotenv()
+app = FastAPI(title="Pawcation API", version="1.0.0")
 
-app = FastAPI()
-
-# Configure CORS
-origins = [
-    "http://localhost:5173",  # Vite default port
-    "http://localhost:3000",
-]
-
+# CORS configuration for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite default port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
-class TripRequest(BaseModel):
-    destination: str
-    pet_details: str
+@app.on_event("startup")
+def startup_event():
+    """Initialize database on startup"""
+    init_db()
 
-class SignupRequest(BaseModel):
-    name: str
-    breed: str
-    age: str
-    weight: str
-    rabies_vaccinated: bool
-    separation_anxiety_level: str
-    flight_comfort_level: str
-    daily_exercise_need: str
-    environment_preference: str
-    personality_archetype: str
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to Pawcation API"}
+def root():
+    return {"message": "Welcome to Pawcation API 🐾"}
 
-@app.post("/api/analyze-pet-image")
-async def analyze_pet_image(file: UploadFile = File(...)):
-    if not GEMINI_API_KEY:
-        return {
-            "breed": "Mock Breed",
-            "age": "2 years",
-            "weight": "15 kg",
-            "daily_exercise_need": "Medium",
-            "environment_preference": "House with Yard",
-            "personality_archetype": "The Companion",
-            "flight_comfort_level": "Medium",
-            "separation_anxiety_level": "Low"
-        }
 
+# ========== USER ENDPOINTS ==========
+
+@app.post("/api/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    """Create a new user"""
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # In production, hash the password!
+    db_user = User(email=user.email, password=user.password)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@app.get("/api/users/{user_id}", response_model=UserFull)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    """Get user with all their pets and plans"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@app.get("/api/users", response_model=List[UserResponse])
+def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """List all users"""
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users
+
+
+@app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """Delete a user"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db.delete(user)
+    db.commit()
+    return None
+
+
+@app.post("/api/users/login", response_model=UserResponse)
+def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Login user with email and password"""
+    user = db.query(User).filter(User.email == login_data.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # In production, use proper password hashing!
+    if user.password != login_data.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    return user
+
+
+# ========== PET ENDPOINTS ==========
+
+@app.post("/api/pets", response_model=PetResponse, status_code=status.HTTP_201_CREATED)
+def create_pet(pet: PetCreate, db: Session = Depends(get_db)):
+    """Create a new pet"""
+    # Verify user exists
+    user = db.query(User).filter(User.user_id == pet.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_pet = Pet(**pet.dict())
+    db.add(db_pet)
+    db.commit()
+    db.refresh(db_pet)
+    return db_pet
+
+
+@app.get("/api/pets/{pet_id}", response_model=PetResponse)
+def get_pet(pet_id: int, db: Session = Depends(get_db)):
+    """Get a specific pet"""
+    pet = db.query(Pet).filter(Pet.pet_id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    return pet
+
+
+@app.get("/api/users/{user_id}/pets", response_model=List[PetResponse])
+def get_user_pets(user_id: int, db: Session = Depends(get_db)):
+    """Get all pets for a user"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    pets = db.query(Pet).filter(Pet.user_id == user_id).all()
+    return pets
+
+
+@app.put("/api/pets/{pet_id}", response_model=PetResponse)
+def update_pet(pet_id: int, pet_update: PetUpdate, db: Session = Depends(get_db)):
+    """Update a pet"""
+    db_pet = db.query(Pet).filter(Pet.pet_id == pet_id).first()
+    if not db_pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    # Update only provided fields
+    update_data = pet_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_pet, field, value)
+    
+    db.commit()
+    db.refresh(db_pet)
+    return db_pet
+
+
+@app.delete("/api/pets/{pet_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_pet(pet_id: int, db: Session = Depends(get_db)):
+    """Delete a pet"""
+    pet = db.query(Pet).filter(Pet.pet_id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    db.delete(pet)
+    db.commit()
+    return None
+
+
+@app.post("/api/pets/analyze-image")
+async def analyze_image(file: UploadFile = File(...)):
+    """Analyze a pet image and return structured data"""
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File provided is not an image.")
+
+    image_bytes = await file.read()
+    mime = file.content_type or "image/jpeg"
     try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = """
-        Analyze this image of a dog and provide a JSON response with the following estimated details based on visual cues and breed characteristics:
-        {
-            "breed": "identified breed or mixed",
-            "age": "estimated age range (e.g. '2 years')",
-            "weight": "estimated weight (e.g. '25 kg')",
-            "daily_exercise_need": "Low/Medium/High",
-            "environment_preference": "Apartment/House with Yard/Farm",
-            "personality_archetype": "e.g. The Guardian, The Jester, The Athlete, The Couch Potato",
-            "flight_comfort_level": "Low/Medium/High (guess based on size/temperament)",
-            "separation_anxiety_level": "Low/Medium/High (guess based on breed)"
-        }
-        Return ONLY the JSON string, no markdown formatting.
-        """
-        
-        response = model.generate_content([prompt, image])
-        text_response = response.text.strip()
-        
-        # Clean up potential markdown code blocks
-        if text_response.startswith("```json"):
-            text_response = text_response[7:]
-        if text_response.startswith("```"):
-            text_response = text_response[3:]
-        if text_response.endswith("```"):
-            text_response = text_response[:-3]
-            
-        return json.loads(text_response)
+        analysis_result = analyze_pet_image(image_bytes, mime)
+        if "error" in analysis_result:
+            raise HTTPException(status_code=500, detail=analysis_result["error"])
+        return analysis_result
     except Exception as e:
-        print(f"Error analyzing image: {e}")
-        # Return a fallback structure if parsing fails
-        return {
-            "breed": "Unknown",
-            "age": "",
-            "weight": "",
-            "daily_exercise_need": "Medium",
-            "environment_preference": "House with Yard",
-            "personality_archetype": "Unknown",
-            "flight_comfort_level": "Medium",
-            "separation_anxiety_level": "Medium"
-        }
+        raise HTTPException(status_code=500, detail=f"An error occurred during image analysis: {str(e)}")
 
-@app.post("/api/signup")
-async def signup(profile: SignupRequest):
-    # In a real app, save to database
-    return {"message": "Profile created successfully", "profile": profile}
 
-@app.post("/api/plan-trip")
-async def plan_trip(request: TripRequest):
-    if not GEMINI_API_KEY:
-        # Mock response if no API key is provided
-        return {
-            "plan": f"Mock Itinerary for {request.destination} with a {request.pet_details}:\n\n"
-                    "1. Morning: Walk in the park.\n"
-                    "2. Afternoon: Visit pet-friendly cafe.\n"
-                    "3. Evening: Relax at the hotel."
-        }
+# ========== PLAN ENDPOINTS ==========
 
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        prompt = f"""
-        Plan a 1-day trip to {request.destination} for a traveler with a pet.
-        Pet details: {request.pet_details}.
-        Include pet-friendly activities, restaurants, and tips.
-        Keep it concise.
-        """
-        response = model.generate_content(prompt)
-        return {"plan": response.text}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/api/plans", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
+def create_plan(plan: PlanCreate, db: Session = Depends(get_db)):
+    """Create a new travel plan"""
+    # Verify user exists
+    user = db.query(User).filter(User.user_id == plan.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_plan = Plan(**plan.dict())
+    db.add(db_plan)
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
+
+
+@app.get("/api/plans/{plan_id}", response_model=PlanResponse)
+def get_plan(plan_id: int, db: Session = Depends(get_db)):
+    """Get a specific plan"""
+    plan = db.query(Plan).filter(Plan.plan_id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
+
+
+@app.get("/api/users/{user_id}/plans", response_model=List[PlanResponse])
+def get_user_plans(user_id: int, db: Session = Depends(get_db)):
+    """Get all plans for a user"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    plans = db.query(Plan).filter(Plan.user_id == user_id).all()
+    return plans
+
+
+@app.put("/api/plans/{plan_id}", response_model=PlanResponse)
+def update_plan(plan_id: int, plan_update: PlanUpdate, db: Session = Depends(get_db)):
+    """Update a plan"""
+    db_plan = db.query(Plan).filter(Plan.plan_id == plan_id).first()
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Update only provided fields
+    update_data = plan_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_plan, field, value)
+    
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
+
+
+@app.delete("/api/plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_plan(plan_id: int, db: Session = Depends(get_db)):
+    """Delete a plan"""
+    plan = db.query(Plan).filter(Plan.plan_id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    db.delete(plan)
+    db.commit()
+    return None
+
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

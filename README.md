@@ -1,87 +1,111 @@
-# Pawcation 🐾
+# 🐾 Pawcation - Pet Travel Planning App
 
-Pawcation is a pet travel planning application powered by Google's Gemini 3 API. It helps you generate pet-friendly travel itineraries for your furry friends.
+A full-stack application for planning pet-friendly travel with your furry companions!
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Python 3.8+
-- Node.js 16+
-- A Google Gemini API Key
+### Prerequisites
+- **Node.js** (v16+) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Python 3.9+**
 
-## Project Structure
+### Installation
 
-```
-Pawcation/
-├── backend/         # FastAPI Backend
-└── frontend/        # React + Vite Frontend
-```
-
-## Setup Instructions
-
-### 1. Backend Setup
-
-Navigate to the backend directory:
-
-```bash
-cd backend
-```
-
-Create and activate a virtual environment:
-
-```bash
-# macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Configure Environment Variables:
-1. Open `.env` file in the `backend` folder.
-2. Add your Gemini API key:
-   ```
-   GEMINI_API_KEY=your_actual_api_key_here
-   ```
-
-Start the Backend Server:
-
-```bash
-uvicorn main:app --reload
-```
-The backend will run at `http://localhost:8000`.
-
-### 2. Frontend Setup
-
-Open a new terminal and navigate to the frontend directory:
-
-```bash
-cd frontend
-```
-
-Install dependencies:
-
+1. **Clone and install dependencies:**
 ```bash
 npm install
+cd backend && python3 -m pip install -r requirements.txt && cd ..
 ```
 
-Start the Development Server:
+2. **Set up environment:**
+```bash
+cp .env.example .env
+```
 
+3. **Start the application:**
+
+**Terminal 1 - Backend:**
+```bash
+cd backend && python3 main.py
+```
+API runs on `http://localhost:8000`
+
+**Terminal 2 - Frontend:**
 ```bash
 npm run dev
 ```
-The frontend will run at `http://localhost:5173`.
+App runs on `http://localhost:5173` (Vite default)
 
-## Usage
+## 📊 Database Models
 
-1. Open your browser to `http://localhost:5173`.
-2. Enter a destination (e.g., "Paris").
-3. Enter your pet details (e.g., "Golden Retriever, loves parks").
-4. Click "Generate Plan" to get a custom itinerary from Gemini!
+### User
+- `user_id`, `email`, `password`
+
+### Pet (linked to User)
+- Basic: name, breed, birthday, weight
+- Health: rabies vaccination, microchip
+- Behavior: separation anxiety (1-5), flight comfort (1-5), exercise needs (1-5)
+- Preferences: environment, personality archetype
+
+### Plan (linked to User)
+- Dates, trip type, destination, itinerary
+- Travel party details, budget
+
+## 🔌 API Endpoints
+
+**Users:** `/api/users` - CRUD operations  
+**Pets:** `/api/pets`, `/api/users/{id}/pets` - CRUD operations  
+**Plans:** `/api/plans`, `/api/users/{id}/plans` - CRUD operations
+
+**API Docs:** http://localhost:8000/docs
+
+## 🧪 Testing
+
+```bash
+cd backend && python3 test_api.py
+```
+
+## 💻 Frontend API Usage
+
+```typescript
+import { api } from '@/lib/api';
+
+// Create user
+const user = await api.createUser('email@example.com', 'password');
+
+// Get pets
+const pets = await api.getUserPets(userId);
+```
+
+## 🛠️ Tech Stack
+
+**Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui  
+**Backend:** Python, FastAPI, SQLAlchemy, SQLite
+
+## 📝 Development with Lovable
+
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+
+Changes via Lovable are committed automatically. You can also edit locally and push changes
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
