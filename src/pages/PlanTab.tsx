@@ -1,5 +1,5 @@
+import heroDog from "@/assets/dog-flight.png";
 import roadDog from "@/assets/dog-road-trip.png";
-import heroDog from "@/assets/hero-dog.png";
 import { PawIcon } from "@/components/icons/PawIcon";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
 import { TripSearchData, TripSearchForm } from "@/components/plan/TripSearchForm";
