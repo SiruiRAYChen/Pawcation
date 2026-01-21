@@ -71,6 +71,7 @@ class PlanBase(BaseModel):
     start_date: date
     end_date: date
     trip_type: Optional[str] = None
+    is_round_trip: Optional[bool] = False
     destination: Optional[str] = None
     places_passing_by: Optional[str] = None
     detailed_itinerary: Optional[str] = None
@@ -95,6 +96,8 @@ class PlanSaveRequest(BaseModel):
     pet_ids: str
     num_adults: int = 2
     num_children: int = 0
+    trip_type: Optional[str] = "Direct Trip"
+    is_round_trip: Optional[bool] = False
     detailed_itinerary: str  # JSON string of itinerary
 
 
@@ -153,6 +156,17 @@ class ItineraryGenerateRequest(BaseModel):
     pet_id: int
     num_adults: int = 2
     num_children: int = 0
+
+
+class RoadTripGenerateRequest(BaseModel):
+    origin: str
+    destination: str
+    start_date: str
+    end_date: str
+    pet_id: int
+    num_adults: int = 2
+    num_children: int = 0
+    is_round_trip: bool = False
 
 
 class ItineraryAlert(BaseModel):

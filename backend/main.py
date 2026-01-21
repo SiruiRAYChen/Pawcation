@@ -4,12 +4,13 @@ import uvicorn
 from database import get_db, init_db
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from gemini_service import analyze_pet_image, generate_travel_itinerary
+from gemini_service import (analyze_pet_image, generate_road_trip_itinerary,
+                            generate_travel_itinerary)
 from models import Pet, Plan, User
 from schemas import (ItineraryGenerateRequest, ItineraryResponse, PetCreate,
                      PetResponse, PetUpdate, PlanCreate, PlanResponse,
-                     PlanSaveRequest, PlanUpdate, UserCreate, UserFull,
-                     UserLogin, UserResponse)
+                     PlanSaveRequest, PlanUpdate, RoadTripGenerateRequest,
+                     UserCreate, UserFull, UserLogin, UserResponse)
 from sqlalchemy.orm import Session
 
 app = FastAPI(title="Pawcation API", version="1.0.0")
@@ -279,6 +280,42 @@ def generate_itinerary(request: ItineraryGenerateRequest, db: Session = Depends(
     return result
 
 
+@app.post("/api/plans/generate-road-trip-itinerary", response_model=ItineraryResponse)
+def generate_road_trip(request: RoadTripGenerateRequest, db: Session = Depends(get_db)):
+    """Generate a pet-friendly road trip itinerary using Gemini AI"""
+    # Get pet information from database
+    pet = db.query(Pet).filter(Pet.pet_id == request.pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    # Prepare pet info for Gemini
+    pet_info = {
+        "name": pet.name,
+        "breed": pet.breed,
+        "age": pet.age,
+        "size": pet.size,
+        "personality": pet.personality or [],
+        "health": pet.health,
+    }
+    
+    # Generate road trip itinerary using Gemini
+    result = generate_road_trip_itinerary(
+        origin=request.origin,
+        destination=request.destination,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        pet_info=pet_info,
+        num_adults=request.num_adults,
+        num_children=request.num_children,
+        is_round_trip=request.is_round_trip,
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return result
+
+
 @app.post("/api/plans/save", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
 def save_plan(plan: PlanSaveRequest, db: Session = Depends(get_db)):
     """Save a generated itinerary as a plan"""
@@ -297,6 +334,8 @@ def save_plan(plan: PlanSaveRequest, db: Session = Depends(get_db)):
         pet_ids=plan.pet_ids,
         num_adults=plan.num_adults,
         num_children=plan.num_children,
+        trip_type=plan.trip_type,
+        is_round_trip=1 if plan.is_round_trip else 0,
         detailed_itinerary=plan.detailed_itinerary,
     )
     db.add(db_plan)

@@ -1,10 +1,9 @@
 from datetime import date
 
-from sqlalchemy import (Column, Date, Float, ForeignKey, Integer,
-                        String, Text, JSON)
-from sqlalchemy.orm import relationship
-
+from sqlalchemy import (JSON, Column, Date, Float, ForeignKey, Integer, String,
+                        Text)
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -60,6 +59,7 @@ class Plan(Base):
     
     # Trip Type & Details
     trip_type = Column(String)  # "Direct Trip" or "Road Trip"
+    is_round_trip = Column(Integer, default=0)  # 0 for one-way, 1 for round trip
     destination = Column(String)  # Main destination
     places_passing_by = Column(Text, nullable=True)  # JSON string or comma-separated
     detailed_itinerary = Column(Text, nullable=True)  # JSON string with full itinerary

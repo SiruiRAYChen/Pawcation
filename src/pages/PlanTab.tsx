@@ -1,3 +1,4 @@
+import roadDog from "@/assets/dog-road-trip.png";
 import heroDog from "@/assets/hero-dog.png";
 import { PawIcon } from "@/components/icons/PawIcon";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
@@ -12,6 +13,8 @@ import { useEffect, useState } from "react";
 
 export const PlanTab = () => {
   const [showItinerary, setShowItinerary] = useState(false);
+  const [travelMode, setTravelMode] = useState<"flight" | "roadtrip">("flight");
+  const [isFlipping, setIsFlipping] = useState(false);
   const [tripData, setTripData] = useState<TripSearchData | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -63,20 +66,34 @@ export const PlanTab = () => {
     setShowItinerary(true);
 
     try {
-      const response = await api.generateItinerary({
-        origin: data.origin,
-        destination: data.destination,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        pet_id: data.selectedPet.pet_id!,
-        num_adults: data.adults,
-        num_children: data.children,
-      });
+      let response;
+      if (data.travelMode === "roadtrip") {
+        response = await api.generateRoadTripItinerary({
+          origin: data.origin,
+          destination: data.destination,
+          start_date: data.startDate,
+          end_date: data.endDate,
+          pet_id: data.selectedPet.pet_id!,
+          num_adults: data.adults,
+          num_children: data.children,
+          is_round_trip: data.isRoundTrip ?? false,
+        });
+      } else {
+        response = await api.generateItinerary({
+          origin: data.origin,
+          destination: data.destination,
+          start_date: data.startDate,
+          end_date: data.endDate,
+          pet_id: data.selectedPet.pet_id!,
+          num_adults: data.adults,
+          num_children: data.children,
+        });
+      }
 
       setItinerary(response.days);
       toast({
-        title: "Itinerary generated! 🎉",
-        description: `Your pet-friendly trip to ${data.destination} is ready`,
+        title: `${data.travelMode === "roadtrip" ? "Road trip" : "Itinerary"} generated! 🎉`,
+        description: `Your pet-friendly ${data.travelMode === "roadtrip" ? "road trip" : "trip"} to ${data.destination} is ready`,
       });
     } catch (error) {
       console.error("Failed to generate itinerary:", error);
@@ -93,6 +110,15 @@ export const PlanTab = () => {
 
   const handleBack = () => {
     setShowItinerary(false);
+  };
+
+  const handleTravelModeToggle = (mode: "flight" | "roadtrip") => {
+    if (mode === travelMode || isFlipping) return;
+    setIsFlipping(true);
+    setTimeout(() => {
+      setTravelMode(mode);
+      setIsFlipping(false);
+    }, 300);
   };
 
   const handleSavePlan = async () => {
@@ -116,6 +142,8 @@ export const PlanTab = () => {
         pet_ids: String(tripData.selectedPet.pet_id),
         num_adults: tripData.adults,
         num_children: tripData.children,
+        trip_type: tripData.travelMode === "roadtrip" ? "Road Trip" : "Direct Trip",
+        is_round_trip: tripData.isRoundTrip ?? false,
         detailed_itinerary: JSON.stringify({ days: itinerary }),
       });
 
@@ -148,6 +176,8 @@ export const PlanTab = () => {
         selectedPet: null,
         adults: plan.num_adults,
         children: plan.num_children,
+        travelMode: plan.trip_type === "Road Trip" ? "roadtrip" : "flight",
+        isRoundTrip: plan.is_round_trip ?? false,
       });
       setShowItinerary(true);
     } catch (error) {
@@ -193,29 +223,84 @@ export const PlanTab = () => {
                   Where to next?
                 </h1>
                 <p className="text-muted-foreground">
-                  Plan trips approved by paws, not just people
+                  {travelMode === "flight" 
+                    ? "Plan trips approved by paws, not just people"
+                    : "Hit the road with your furry co-pilot"}
                 </p>
               </div>
               
-              {/* Hero Image */}
-              <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="relative mt-4 mx-auto w-48 h-48"
-              >
-                <img
-                  src={heroDog}
-                  alt="Happy dog ready to travel"
-                  className="w-full h-full object-contain drop-shadow-lg"
-                />
-              </motion.div>
+              {/* Hero Image Selector */}
+              <div className="relative mt-4 mx-auto flex items-center justify-center gap-6">
+                {/* Road Trip Dog (Left) */}
+                <motion.div
+                  onClick={() => handleTravelModeToggle("roadtrip")}
+                  className={`relative w-32 h-32 cursor-pointer transition-all duration-300 ${
+                    travelMode === "roadtrip" ? "scale-100 opacity-100" : "scale-75 opacity-30"
+                  }`}
+                  whileHover={{ scale: travelMode === "roadtrip" ? 1.05 : 0.85 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <motion.img
+                    src={roadDog}
+                    alt="Road trip with your pet"
+                    className="w-full h-full object-contain drop-shadow-lg"
+                    animate={{
+                      rotateY: isFlipping && travelMode === "flight" ? 360 : 0,
+                    }}
+                    transition={{ duration: 0.6 }}
+                  />
+                  {travelMode === "roadtrip" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-bold rounded-full"
+                    >
+                      Road Trip
+                    </motion.div>
+                  )}
+                </motion.div>
+
+                {/* Flight Dog (Right) */}
+                <motion.div
+                  onClick={() => handleTravelModeToggle("flight")}
+                  className={`relative w-40 h-40 cursor-pointer transition-all duration-300 ${
+                    travelMode === "flight" ? "scale-100 opacity-100" : "scale-75 opacity-30"
+                  }`}
+                  whileHover={{ scale: travelMode === "flight" ? 1.05 : 0.85 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <motion.img
+                    src={heroDog}
+                    alt="Happy dog ready to travel"
+                    className="w-full h-full object-contain drop-shadow-lg"
+                    animate={{
+                      rotateY: isFlipping && travelMode === "roadtrip" ? 360 : 0,
+                    }}
+                    transition={{ duration: 0.6 }}
+                  />
+                  {travelMode === "flight" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-accent text-accent-foreground text-xs font-bold rounded-full"
+                    >
+                      Flight
+                    </motion.div>
+                  )}
+                </motion.div>
+              </div>
             </div>
 
             {/* Search Form */}
-            <div className="px-4 -mt-4">
-              <TripSearchForm onSearch={handleSearch} />
-            </div>
+            <motion.div 
+              key={travelMode}
+              initial={{ opacity: 0, rotateY: -90 }}
+              animate={{ opacity: 1, rotateY: 0 }}
+              transition={{ duration: 0.3 }}
+              className="px-4 -mt-4"
+            >
+              <TripSearchForm onSearch={handleSearch} travelMode={travelMode} />
+            </motion.div>
 
             {/* Saved Plans */}
             <div className="px-4 mt-6 space-y-6">
@@ -312,11 +397,14 @@ export const PlanTab = () => {
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     {itinerary.length} days • {tripData?.selectedPet?.name || "Your pet"}
+                    {tripData?.travelMode === "roadtrip" && tripData?.isRoundTrip && " • Round Trip 🔄"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
                   <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs font-semibold text-success">AI Generated</span>
+                  <span className="text-xs font-semibold text-success">
+                    {tripData?.travelMode === "roadtrip" ? "🚗 Road Trip" : "AI Generated"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -326,10 +414,14 @@ export const PlanTab = () => {
               <div className="flex flex-col items-center justify-center py-20 px-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
                 <h2 className="text-xl font-bold text-foreground mb-2">
-                  Crafting your pet-friendly adventure...
+                  {tripData?.travelMode === "roadtrip" 
+                    ? "Mapping your pet-friendly road trip..."
+                    : "Crafting your pet-friendly adventure..."}
                 </h2>
                 <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Our AI is analyzing pet-friendly accommodations, activities, and travel options for {tripData?.selectedPet?.name}
+                  {tripData?.travelMode === "roadtrip"
+                    ? `Our AI is finding the best routes, rest stops, and pet-friendly places along the way for ${tripData?.selectedPet?.name}`
+                    : `Our AI is analyzing pet-friendly accommodations, activities, and travel options for ${tripData?.selectedPet?.name}`}
                 </p>
               </div>
             ) : (

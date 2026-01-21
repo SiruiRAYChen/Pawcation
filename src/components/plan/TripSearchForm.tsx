@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, Pet } from "@/lib/api";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Plane, Sparkles, Users } from "lucide-react";
+import { Calendar, Car, MapPin, Plane, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface TripSearchFormProps {
   onSearch: (data: TripSearchData) => void;
+  travelMode?: "flight" | "roadtrip";
 }
 
 export interface TripSearchData {
@@ -19,9 +20,11 @@ export interface TripSearchData {
   selectedPet: Pet | null;
   adults: number;
   children: number;
+  isRoundTrip?: boolean;
+  travelMode: "flight" | "roadtrip";
 }
 
-export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
+export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFormProps) => {
   const { user } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
@@ -34,7 +37,13 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
     selectedPet: null,
     adults: 2,
     children: 0,
+    isRoundTrip: true,
+    travelMode: travelMode,
   });
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, travelMode }));
+  }, [travelMode]);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -125,7 +134,11 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
           />
         </div>
         <div className="relative">
-          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
+          {travelMode === "flight" ? (
+            <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
+          ) : (
+            <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
+          )}
           <Input
             placeholder="To (e.g., Los Angeles)"
             value={formData.destination}
@@ -134,6 +147,24 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
           />
         </div>
       </div>
+
+      {/* Round Trip Toggle (only for road trips) */}
+      {travelMode === "roadtrip" && (
+        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+          <label className="text-sm font-medium cursor-pointer flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={formData.isRoundTrip}
+              onChange={(e) => setFormData({ ...formData, isRoundTrip: e.target.checked })}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            Round Trip
+          </label>
+          <span className="text-xs text-muted-foreground">
+            {formData.isRoundTrip ? "Different route back" : "One-way journey"}
+          </span>
+        </div>
+      )}
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-3">
@@ -197,7 +228,7 @@ export const TripSearchForm = ({ onSearch }: TripSearchFormProps) => {
         className="w-full h-14 text-lg font-bold rounded-xl gradient-primary shadow-glow hover:opacity-90 transition-opacity"
       >
         <Sparkles className="w-5 h-5 mr-2" />
-        Generate Itinerary
+        {travelMode === "flight" ? "Generate Itinerary" : "Plan Road Trip"}
       </Button>
     </motion.form>
   );

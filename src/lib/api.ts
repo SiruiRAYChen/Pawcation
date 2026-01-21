@@ -29,6 +29,7 @@ export interface Plan {
   start_date: string;
   end_date: string;
   trip_type?: string;
+  is_round_trip?: boolean;
   destination?: string;
   places_passing_by?: string;
   detailed_itinerary?: string;
@@ -80,6 +81,17 @@ export interface ItineraryGenerateRequest {
   pet_id: number;
   num_adults: number;
   num_children: number;
+}
+
+export interface RoadTripGenerateRequest {
+  origin: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  pet_id: number;
+  num_adults: number;
+  num_children: number;
+  is_round_trip: boolean;
 }
 
 // API Client
@@ -232,6 +244,13 @@ class PawcationAPI {
     });
   }
 
+  async generateRoadTripItinerary(request: RoadTripGenerateRequest): Promise<ItineraryResponse> {
+    return this.request<ItineraryResponse>('/api/plans/generate-road-trip-itinerary', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   async savePlan(planData: {
     user_id: number;
     origin: string;
@@ -241,6 +260,8 @@ class PawcationAPI {
     pet_ids: string;
     num_adults: number;
     num_children: number;
+    trip_type?: string;
+    is_round_trip?: boolean;
     detailed_itinerary: string;
   }): Promise<Plan> {
     return this.request<Plan>('/api/plans/save', {
