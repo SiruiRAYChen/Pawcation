@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
-import { MapPin, Compass, User } from "lucide-react";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { motion } from "framer-motion";
+import { Compass, MapPin, User } from "lucide-react";
 
 export type Tab = "plan" | "explore" | "profile";
 
@@ -12,7 +12,7 @@ interface BottomNavProps {
 const tabs = [
   { id: "plan" as Tab, label: "Plan", icon: MapPin },
   { id: "explore" as Tab, label: "Explore", icon: Compass },
-  { id: "profile" as Tab, label: "Profile", icon: User },
+  { id: "profile" as Tab, label: "Home", icon: User },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
