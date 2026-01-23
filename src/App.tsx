@@ -11,6 +11,8 @@ import AddPetPage from "./pages/AddPetPage";
 import { PlanTab } from "./pages/PlanTab";
 import { ExploreTab } from "./pages/ExploreTab";
 import { ProfileTab } from "./pages/ProfileTab";
+import { ProfilePage } from "./pages/ProfilePage";
+import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -29,11 +31,13 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<Index />}>
-              <Route index element={<Navigate to="/explore" replace />} />
+              <Route index element={<Navigate to="/home" replace />} />
               <Route path="explore" element={<ExploreTab />} />
               <Route path="plan" element={<PlanTab />} />
-              <Route path="profile" element={<ProfileTab />} />
+              <Route path="home" element={<ProfileTab />} />
             </Route>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route path="/add-pet" element={<AddPetPage />} />
             <Route path="/add-pet/:petId" element={<AddPetPage />} />
             <Route path="*" element={<NotFound />} />

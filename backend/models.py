@@ -14,6 +14,8 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)  # Should be hashed in production
+    name = Column(String, nullable=True)  # User display name
+    avatar_url = Column(String, nullable=True)  # User profile avatar
     
     # Relationships
     pets = relationship("Pet", back_populates="owner", cascade="all, delete-orphan")
@@ -29,7 +31,10 @@ class Pet(Base):
     # Basic Info from Gemini
     name = Column(String, nullable=False)
     breed = Column(String, nullable=True)
-    age = Column(String, nullable=True)
+    gender = Column(String, nullable=True)  # 'male' or 'female'
+    date_of_birth = Column(Date, nullable=True)  # ISO date
+    is_dob_estimated = Column(Integer, nullable=True, default=0)  # 0 or 1 (boolean as int)
+    gotcha_day = Column(Date, nullable=True)  # Adoption date
     size = Column(String, nullable=True)
     personality = Column(JSON, nullable=True)
     health = Column(String, nullable=True)

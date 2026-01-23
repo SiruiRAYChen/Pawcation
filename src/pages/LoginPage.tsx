@@ -16,10 +16,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  // Password validation function
+  const validatePassword = (pwd: string) => {
+    if (mode === 'signup' && pwd.length > 0 && (pwd.length < 6 || pwd.length > 15)) {
+      return 'Password must be between 6-15 characters';
+    }
+    return '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setPasswordError('');
+    
+    // Validate password for signup
+    if (mode === 'signup') {
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setPasswordError(pwdError);
+        return;
+      }
+    }
+    
     setLoading(true);
 
     try {
@@ -143,12 +163,28 @@ export default function LoginPage() {
                     type="password"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      const newPassword = e.target.value;
+                      if (newPassword.length <= 15) { // Prevent typing beyond 15 chars
+                        setPassword(newPassword);
+                        setPasswordError(validatePassword(newPassword));
+                      }
+                    }}
                     required
-                    className="pl-9 h-10 bg-muted/50 border-border rounded-lg text-sm"
+                    minLength={mode === 'signup' ? 6 : undefined}
+                    maxLength={15}
+                    className={`pl-9 h-10 bg-muted/50 border-border rounded-lg text-sm ${
+                      passwordError ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
                     disabled={loading}
                   />
                 </div>
+                {passwordError && (
+                  <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+                )}
+                {mode === 'signup' && (
+                  <p className="text-xs text-gray-500 mt-1">Password must be 6-15 characters long</p>
+                )}
               </div>
 
               <Button

@@ -10,7 +10,7 @@ from models import Pet, Plan, User
 from schemas import (ItineraryGenerateRequest, ItineraryResponse, PetCreate,
                      PetResponse, PetUpdate, PlanCreate, PlanResponse,
                      PlanSaveRequest, PlanUpdate, RoadTripGenerateRequest,
-                     UserCreate, UserFull, UserLogin, UserResponse)
+                     UserCreate, UserFull, UserLogin, UserResponse, UserUpdate)
 from sqlalchemy.orm import Session
 
 app = FastAPI(title="Pawcation API", version="1.0.0")
@@ -68,6 +68,27 @@ def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """List all users"""
     users = db.query(User).offset(skip).limit(limit).all()
     return users
+
+
+@app.put("/api/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+    """Update user profile"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update fields if provided
+    if user_update.name is not None:
+        user.name = user_update.name
+    if user_update.avatar_url is not None:
+        user.avatar_url = user_update.avatar_url
+    if user_update.password is not None:
+        # In production, hash the password!
+        user.password = user_update.password
+    
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

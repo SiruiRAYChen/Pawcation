@@ -5,6 +5,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export interface User {
   user_id: number;
   email: string;
+  name?: string;
+  avatar_url?: string;
+}
+
+export interface UserUpdate {
+  name?: string;
+  avatar_url?: string;
+  password?: string;
 }
 
 export interface Pet {
@@ -12,8 +20,11 @@ export interface Pet {
   user_id: number;
   name: string;
   breed?: string;
-  age?: string; // Changed from birthday
+  date_of_birth?: string; // ISO date string (YYYY-MM-DD)
+  is_dob_estimated?: boolean; // true if age was estimated, false if actual DOB
+  gotcha_day?: string; // ISO date string (YYYY-MM-DD) - adoption date
   size?: string; // Changed from weight
+  gender?: string;
   personality?: string[];
   health?: string;
   appearance?: string;
@@ -151,6 +162,13 @@ class PawcationAPI {
     return this.request<User>('/api/users/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async updateUser(userId: number, updates: UserUpdate): Promise<User> {
+    return this.request<User>(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
     });
   }
 

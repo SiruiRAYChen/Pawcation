@@ -18,7 +18,7 @@ const Index = () => {
   const getActiveTab = (): Tab => {
     const path = location.pathname;
     if (path.startsWith('/plan')) return 'plan';
-    if (path.startsWith('/profile')) return 'profile';
+    if (path.startsWith('/home')) return 'profile';
     return 'explore';
   };
 
@@ -45,7 +45,13 @@ const Index = () => {
       <Outlet />
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab={getActiveTab()} onTabChange={(tab) => navigate(`/${tab}`)} />
+      <BottomNav 
+        activeTab={getActiveTab()} 
+        onTabChange={(tab) => {
+          const route = tab === 'profile' ? '/home' : `/${tab}`;
+          navigate(route);
+        }} 
+      />
     </div>
   );
 };

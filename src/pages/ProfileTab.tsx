@@ -41,6 +41,10 @@ export const ProfileTab = () => {
     setEditingPet(null);
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -88,12 +92,27 @@ export const ProfileTab = () => {
         >
           {user ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary-foreground" />
-                </div>
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                onClick={handleProfileClick}
+              >
+                {/* User Avatar */}
+                {user.avatar_url ? (
+                  <img 
+                    src={user.avatar_url} 
+                    alt="User Avatar"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-emerald-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+                    <User className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                )}
                 <div>
-                  <p className="font-bold text-foreground">{email}</p>
+                  {/* Display name if available, otherwise email */}
+                  <p className="font-bold text-foreground">
+                    {user.name || email}
+                  </p>
                   <p className="text-sm text-muted-foreground">Pet Parent</p>
                 </div>
               </div>

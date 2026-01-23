@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   user_id: number;
   email: string;
+  name?: string;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,17 +34,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const savedUserId = localStorage.getItem('userId');
         const savedEmail = localStorage.getItem('userEmail');
+        const savedName = localStorage.getItem('userName');
+        const savedAvatarUrl = localStorage.getItem('userAvatarUrl');
         
         if (savedUserId && savedEmail) {
           setUser({
             user_id: parseInt(savedUserId),
             email: savedEmail,
+            name: savedName || undefined,
+            avatar_url: savedAvatarUrl || undefined,
           });
         }
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('userId');
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userAvatarUrl');
       } finally {
         setLoading(false);
       }
@@ -69,6 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newUser = {
         user_id: data.user_id,
         email: data.email,
+        name: data.name,
+        avatar_url: data.avatar_url,
       };
 
       setUser(newUser);
@@ -76,6 +87,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 保存到localStorage
       localStorage.setItem('userId', String(newUser.user_id));
       localStorage.setItem('userEmail', newUser.email);
+      if (newUser.name) localStorage.setItem('userName', newUser.name);
+      if (newUser.avatar_url) localStorage.setItem('userAvatarUrl', newUser.avatar_url);
       
     } catch (error) {
       console.error('Login error:', error);
@@ -104,6 +117,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newUser = {
         user_id: data.user_id,
         email: data.email,
+        name: data.name,
+        avatar_url: data.avatar_url,
       };
 
       setUser(newUser);
@@ -111,6 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 保存到localStorage
       localStorage.setItem('userId', String(newUser.user_id));
       localStorage.setItem('userEmail', newUser.email);
+      if (newUser.name) localStorage.setItem('userName', newUser.name);
+      if (newUser.avatar_url) localStorage.setItem('userAvatarUrl', newUser.avatar_url);
       
     } catch (error) {
       console.error('Signup error:', error);
@@ -125,6 +142,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userAvatarUrl');
+  };
+
+  // 更新用户信息
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      
+      // 更新localStorage
+      if (updatedUser.name) {
+        localStorage.setItem('userName', updatedUser.name);
+      } else {
+        localStorage.removeItem('userName');
+      }
+      
+      if (updatedUser.avatar_url) {
+        localStorage.setItem('userAvatarUrl', updatedUser.avatar_url);
+      } else {
+        localStorage.removeItem('userAvatarUrl');
+      }
+    }
   };
 
   const value: AuthContextType = {
@@ -136,6 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     signup,
     logout,
+    updateUser,
   };
 
   return (

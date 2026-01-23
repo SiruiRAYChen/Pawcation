@@ -20,16 +20,27 @@ class UserLogin(BaseModel):
 
 class UserResponse(UserBase):
     user_id: int
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    password: Optional[str] = None
 
 
 # Pet Schemas
 class PetBase(BaseModel):
     name: str
     breed: Optional[str] = None
-    age: Optional[str] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    is_dob_estimated: Optional[bool] = None
+    gotcha_day: Optional[date] = None
     size: Optional[str] = None
     personality: Optional[List[str]] = None
     health: Optional[str] = None
@@ -47,7 +58,10 @@ class PetCreate(PetBase):
 class PetUpdate(BaseModel):
     name: Optional[str] = None
     breed: Optional[str] = None
-    age: Optional[str] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    is_dob_estimated: Optional[bool] = None
+    gotcha_day: Optional[date] = None
     size: Optional[str] = None
     personality: Optional[List[str]] = None
     health: Optional[str] = None
