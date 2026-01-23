@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface User {
   user_id: number;
@@ -88,7 +88,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('userId', String(newUser.user_id));
       localStorage.setItem('userEmail', newUser.email);
       if (newUser.name) localStorage.setItem('userName', newUser.name);
-      if (newUser.avatar_url) localStorage.setItem('userAvatarUrl', newUser.avatar_url);
+      // Only store avatar URL if it's not a base64 image to avoid quota errors
+      if (newUser.avatar_url && !newUser.avatar_url.startsWith('data:') && newUser.avatar_url.length < 500) {
+        localStorage.setItem('userAvatarUrl', newUser.avatar_url);
+      }
       
     } catch (error) {
       console.error('Login error:', error);
@@ -127,7 +130,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('userId', String(newUser.user_id));
       localStorage.setItem('userEmail', newUser.email);
       if (newUser.name) localStorage.setItem('userName', newUser.name);
-      if (newUser.avatar_url) localStorage.setItem('userAvatarUrl', newUser.avatar_url);
+      // Only store avatar URL if it's not a base64 image to avoid quota errors
+      if (newUser.avatar_url && !newUser.avatar_url.startsWith('data:') && newUser.avatar_url.length < 500) {
+        localStorage.setItem('userAvatarUrl', newUser.avatar_url);
+      }
       
     } catch (error) {
       console.error('Signup error:', error);
@@ -159,8 +165,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('userName');
       }
       
+      // Don't store large base64 images in localStorage - only store if it's a URL
       if (updatedUser.avatar_url) {
-        localStorage.setItem('userAvatarUrl', updatedUser.avatar_url);
+        // Only store if it's a reasonable size (not a base64 image)
+        // Base64 images start with "data:" and are usually very large
+        if (!updatedUser.avatar_url.startsWith('data:') && updatedUser.avatar_url.length < 500) {
+          localStorage.setItem('userAvatarUrl', updatedUser.avatar_url);
+        } else {
+          // For base64 images, don't store in localStorage to avoid quota errors
+          localStorage.removeItem('userAvatarUrl');
+        }
       } else {
         localStorage.removeItem('userAvatarUrl');
       }

@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { X, Camera, Upload, Calendar } from 'lucide-react';
+import { ImageCropper } from '@/components/pet/ImageCropper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ImageCropper } from '@/components/pet/ImageCropper';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, Pet } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { api, Pet } from '@/lib/api';
+import { motion } from 'framer-motion';
+import { Camera, Upload, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface AddPetModalProps {
   isOpen: boolean;
@@ -649,33 +648,68 @@ export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetM
                 <div className="flex items-center gap-2 mb-4">
                   <div className="flex-1">
                     <Input
-                      type="number"
-                      min="1"
-                      max="12"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="MM"
                       value={birthdayMonth}
-                      onChange={(e) => setBirthdayMonth(clampNumberInput(e.target.value, 1, 12, 2))}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '');
+                        if (digitsOnly === '') {
+                          setBirthdayMonth('');
+                        } else {
+                          const num = parseInt(digitsOnly, 10);
+                          if (num > 12) {
+                            setBirthdayMonth('12');
+                          } else {
+                            setBirthdayMonth(digitsOnly.slice(0, 2));
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        if (val && val.length === 1) {
+                          setBirthdayMonth(val.padStart(2, '0'));
+                        }
+                      }}
                       className="h-9 text-sm text-center"
+                      maxLength={2}
                     />
                   </div>
                   <span className="text-gray-400">/</span>
                   <div className="flex-1">
                     <Input
-                      type="number"
-                      min="1"
-                      max="31"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="DD"
                       value={birthdayDay}
-                      onChange={(e) => setBirthdayDay(clampNumberInput(e.target.value, 1, 31, 2))}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '');
+                        if (digitsOnly === '') {
+                          setBirthdayDay('');
+                        } else {
+                          const num = parseInt(digitsOnly, 10);
+                          if (num > 31) {
+                            setBirthdayDay('31');
+                          } else {
+                            setBirthdayDay(digitsOnly.slice(0, 2));
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        if (val && val.length === 1) {
+                          setBirthdayDay(val.padStart(2, '0'));
+                        }
+                      }}
                       className="h-9 text-sm text-center"
+                      maxLength={2}
                     />
                   </div>
                   <span className="text-gray-400">/</span>
                   <div className="flex-1">
                     <Input
-                      type="number"
-                      min="1900"
-                      max={currentYear}
+                      type="text"
+                      inputMode="numeric"
                       placeholder="YYYY"
                       value={birthdayYear}
                       onChange={(e) => {
@@ -683,6 +717,7 @@ export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetM
                         setBirthdayYear(digitsOnly);
                       }}
                       className="h-9 text-sm text-center"
+                      maxLength={4}
                     />
                   </div>
                 </div>
