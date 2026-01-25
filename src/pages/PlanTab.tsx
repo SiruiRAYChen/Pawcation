@@ -243,10 +243,13 @@ export const PlanTab = () => {
                 {/* Road Trip Dog (Left) */}
                 <motion.div
                   onClick={() => handleTravelModeToggle("roadtrip")}
-                  className={`relative w-32 h-32 cursor-pointer transition-all duration-300 ${
-                    travelMode === "roadtrip" ? "scale-100 opacity-100" : "scale-75 opacity-30"
-                  }`}
-                  whileHover={{ scale: travelMode === "roadtrip" ? 1.05 : 0.85 }}
+                  className="relative w-36 h-36 cursor-pointer"
+                  animate={{
+                    scale: travelMode === "roadtrip" ? 1 : 0.7,
+                    opacity: travelMode === "roadtrip" ? 1 : 0.4,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ scale: travelMode === "roadtrip" ? 1.05 : 0.75 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <motion.img
@@ -272,10 +275,13 @@ export const PlanTab = () => {
                 {/* Flight Dog (Right) */}
                 <motion.div
                   onClick={() => handleTravelModeToggle("flight")}
-                  className={`relative w-40 h-40 cursor-pointer transition-all duration-300 ${
-                    travelMode === "flight" ? "scale-100 opacity-100" : "scale-75 opacity-30"
-                  }`}
-                  whileHover={{ scale: travelMode === "flight" ? 1.05 : 0.85 }}
+                  className="relative w-36 h-36 cursor-pointer"
+                  animate={{
+                    scale: travelMode === "flight" ? 1 : 0.7,
+                    opacity: travelMode === "flight" ? 1 : 0.4,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ scale: travelMode === "flight" ? 1.05 : 0.75 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <motion.img
