@@ -217,7 +217,7 @@ export const PlanTab = () => {
             className="gradient-hero min-h-screen"
           >
             {/* Hero Section */}
-            <div className="relative pt-8 px-4 pb-6">
+            <div className="relative pt-12 px-4 pb-6 safe-top">
               <div className="text-center space-y-2">
                 <motion.div
                   initial={{ scale: 0 }}

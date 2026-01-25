@@ -1,14 +1,14 @@
-import { motion } from "framer-motion";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { ExploreCategory } from "@/components/explore/ExploreCategory";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
+import { Search } from "lucide-react";
 
 export const ExploreTab = () => {
   return (
     <div className="min-h-screen pb-24 gradient-hero">
       {/* Header */}
-      <div className="px-4 pt-8 pb-4 safe-top">
+      <div className="px-4 pt-12 pb-4 safe-top">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

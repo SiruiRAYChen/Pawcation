@@ -1,15 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Plus, LogOut, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PetCard } from "@/components/pet/PetCard";
-import { AddPetModal } from "@/components/pet/AddPetModal";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { AddPetModal } from "@/components/pet/AddPetModal";
+import { PetCard } from "@/components/pet/PetCard";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { LogOut, Plus, User } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const ProfileTab = () => {
   const { user, email, logout } = useAuth();
@@ -57,26 +56,14 @@ export const ProfileTab = () => {
   return (
     <div className="min-h-screen pb-24 gradient-hero">
       {/* Header */}
-      <div className="px-4 pt-8 pb-4 safe-top">
+      <div className="px-4 pt-12 pb-4 safe-top">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
+          className="flex items-center gap-2"
         >
-          <div className="flex items-center gap-2">
-            <PawIcon className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-extrabold text-foreground">My Pets</h1>
-          </div>
-          {user && (
-            <Button
-              onClick={handleAddPetClick}
-              size="sm"
-              className="gradient-primary rounded-full shadow-glow"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Pet
-            </Button>
-          )}
+          <PawIcon className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-extrabold text-foreground">My Pets</h1>
         </motion.div>
         <p className="text-muted-foreground mt-1">
           Your travel companions
@@ -150,9 +137,38 @@ export const ProfileTab = () => {
             </motion.div>
           ))
         )}
+        
+        {/* Add Pet Button (Circular, centered below pet list) */}
+        {user && pets && pets.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex justify-center pt-4 pb-2"
+          >
+            <Button
+              onClick={handleAddPetClick}
+              size="lg"
+              className="w-16 h-16 rounded-full gradient-primary shadow-glow p-0"
+            >
+              <Plus className="w-8 h-8" />
+            </Button>
+          </motion.div>
+        )}
+        
         {pets && pets.length === 0 && (
-          <div className="text-center py-10">
+          <div className="text-center py-10 space-y-4">
             <p className="text-muted-foreground">You haven't added any pets yet.</p>
+            {user && (
+              <Button
+                onClick={handleAddPetClick}
+                size="lg"
+                className="gradient-primary rounded-full shadow-glow"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add Your First Pet
+              </Button>
+            )}
           </div>
         )}
       </div>
