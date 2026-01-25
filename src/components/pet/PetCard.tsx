@@ -1,12 +1,12 @@
-import { motion } from "framer-motion";
-import { Edit2, Syringe, Microchip, HeartPulse, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { PawIcon } from "@/components/icons/PawIcon";
-import { Pet, api } from "@/lib/api";
 import sampleCorgi from "@/assets/sample-pet-corgi.png";
-import { useState, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { PawIcon } from "@/components/icons/PawIcon";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Pet, api } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Edit2, HeartPulse, Microchip, Syringe, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 
 interface PetCardProps {
   pet: Pet;
@@ -25,7 +25,6 @@ export const PetCard = ({ pet, onEdit, onDelete }: PetCardProps) => {
   const {
     name,
     breed,
-    size,
     avatar_url,
     image_url,
     personality = [],
@@ -34,10 +33,84 @@ export const PetCard = ({ pet, onEdit, onDelete }: PetCardProps) => {
     health,
     age,
     pet_id,
+    date_of_birth,
+    is_dob_estimated,
+    gotcha_day,
   } = pet;
 
   // Use avatar_url if available, fallback to image_url, then to default
   const displayImage = avatar_url || image_url || sampleCorgi;
+
+  // Birthday display logic
+  const getBirthdayDisplay = () => {
+    const currentYear = new Date().getFullYear();
+    
+    // If user filled exact birthday
+    if (date_of_birth && !is_dob_estimated) {
+      const dob = new Date(date_of_birth);
+      return {
+        type: 'exact',
+        text: dob.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })
+      };
+    }
+    
+    // If no exact birthday but has gotcha day
+    if (gotcha_day && is_dob_estimated) {
+      // Calculate estimated birth year from age
+      let estimatedYear = currentYear;
+      if (age) {
+        const ageMatch = age.match(/(\d+)\s*years?/i);
+        if (ageMatch) {
+          const years = parseInt(ageMatch[1]);
+          estimatedYear = currentYear - years;
+        }
+      } else if (date_of_birth) {
+        const dob = new Date(date_of_birth);
+        estimatedYear = dob.getFullYear();
+      }
+      
+      const gotchaDate = new Date(gotcha_day);
+      const gotchaFormatted = gotchaDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+      
+      return {
+        type: 'gotcha',
+        estimated: `Est. ${estimatedYear}`,
+        gotcha: `Gotcha: ${gotchaFormatted} ❤️`
+      };
+    }
+    
+    // If only age is available
+    if (age || (date_of_birth && is_dob_estimated)) {
+      let estimatedYear = currentYear;
+      if (age) {
+        const ageMatch = age.match(/(\d+)\s*years?/i);
+        if (ageMatch) {
+          const years = parseInt(ageMatch[1]);
+          estimatedYear = currentYear - years;
+        }
+      } else if (date_of_birth) {
+        const dob = new Date(date_of_birth);
+        estimatedYear = dob.getFullYear();
+      }
+      
+      return {
+        type: 'estimated',
+        text: `Est. ${estimatedYear}`
+      };
+    }
+    
+    return null;
+  };
+
+  const birthdayDisplay = getBirthdayDisplay();
 
   const handlePointerDown = (e: React.PointerEvent) => {
     dragStartX.current = e.clientX;
@@ -187,10 +260,21 @@ export const PetCard = ({ pet, onEdit, onDelete }: PetCardProps) => {
                   <span className="ml-2 text-gray-900">{age}</span>
                 </div>
               )}
-              {size && (
+              {birthdayDisplay && (
                 <div className="text-sm">
-                  <span className="text-gray-600 font-medium">SIZE:</span>
-                  <span className="ml-2 text-gray-900">{size}</span>
+                  <span className="text-gray-600 font-medium">DATE OF BIRTH:</span>
+                  {birthdayDisplay.type === 'exact' && (
+                    <span className="ml-2 text-gray-900">{birthdayDisplay.text}</span>
+                  )}
+                  {birthdayDisplay.type === 'estimated' && (
+                    <span className="ml-2 text-gray-900">{birthdayDisplay.text}</span>
+                  )}
+                  {birthdayDisplay.type === 'gotcha' && (
+                    <div className="ml-2 text-gray-900">
+                      <div>{birthdayDisplay.estimated}</div>
+                      <div>{birthdayDisplay.gotcha}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

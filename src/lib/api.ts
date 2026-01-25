@@ -23,6 +23,7 @@ export interface Pet {
   date_of_birth?: string; // ISO date string (YYYY-MM-DD)
   is_dob_estimated?: boolean; // true if age was estimated, false if actual DOB
   gotcha_day?: string; // ISO date string (YYYY-MM-DD) - adoption date
+  age?: string; // Human-readable age string (e.g., "2 years 3 months")
   size?: string; // Changed from weight
   gender?: string;
   personality?: string[];

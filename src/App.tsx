@@ -1,18 +1,19 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AddPetPage from "./pages/AddPetPage";
+import { ChangePasswordPage } from "./pages/ChangePasswordPage";
+import { ExploreTab } from "./pages/ExploreTab";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
+import { MemoriesTab } from "./pages/MemoriesTab";
 import NotFound from "./pages/NotFound";
-import AddPetPage from "./pages/AddPetPage";
 import { PlanTab } from "./pages/PlanTab";
-import { ExploreTab } from "./pages/ExploreTab";
-import { ProfileTab } from "./pages/ProfileTab";
 import { ProfilePage } from "./pages/ProfilePage";
-import { ChangePasswordPage } from "./pages/ChangePasswordPage";
+import { ProfileTab } from "./pages/ProfileTab";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route index element={<Navigate to="/home" replace />} />
               <Route path="explore" element={<ExploreTab />} />
               <Route path="plan" element={<PlanTab />} />
+              <Route path="memories" element={<MemoriesTab />} />
               <Route path="home" element={<ProfileTab />} />
             </Route>
             <Route path="/profile" element={<ProfilePage />} />

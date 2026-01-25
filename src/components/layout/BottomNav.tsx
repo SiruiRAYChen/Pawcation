@@ -1,8 +1,9 @@
+import { MemoriesIcon } from "@/components/icons/MemoriesIcon";
 import { PawIcon } from "@/components/icons/PawIcon";
 import { motion } from "framer-motion";
 import { Compass, MapPin, User } from "lucide-react";
 
-export type Tab = "plan" | "explore" | "profile";
+export type Tab = "plan" | "memories" | "explore" | "profile";
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -11,6 +12,7 @@ interface BottomNavProps {
 
 const tabs = [
   { id: "plan" as Tab, label: "Plan", icon: MapPin },
+  { id: "memories" as Tab, label: "Memories", icon: MemoriesIcon },
   { id: "explore" as Tab, label: "Explore", icon: Compass },
   { id: "profile" as Tab, label: "Home", icon: User },
 ];

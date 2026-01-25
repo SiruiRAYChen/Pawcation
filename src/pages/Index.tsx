@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useNavigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { BottomNav, Tab } from "@/components/layout/BottomNav";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { BottomNav, Tab } from "@/components/layout/BottomNav";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -18,6 +18,7 @@ const Index = () => {
   const getActiveTab = (): Tab => {
     const path = location.pathname;
     if (path.startsWith('/plan')) return 'plan';
+    if (path.startsWith('/memories')) return 'memories';
     if (path.startsWith('/home')) return 'profile';
     return 'explore';
   };
