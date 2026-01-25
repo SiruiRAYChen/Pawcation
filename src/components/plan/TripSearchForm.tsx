@@ -1,10 +1,11 @@
 import { PawIcon } from "@/components/icons/PawIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, Pet } from "@/lib/api";
 import { motion } from "framer-motion";
-import { Calendar, Car, MapPin, Plane, Sparkles, Users } from "lucide-react";
+import { Calendar, Car, DollarSign, MapPin, Plane, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface TripSearchFormProps {
@@ -22,6 +23,7 @@ export interface TripSearchData {
   children: number;
   isRoundTrip?: boolean;
   travelMode: "flight" | "roadtrip";
+  budget: number;
 }
 
 export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFormProps) => {
@@ -39,6 +41,7 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
     children: 0,
     isRoundTrip: true,
     travelMode: travelMode,
+    budget: 1500,
   });
 
   useEffect(() => {
@@ -219,6 +222,35 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
               ))}
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Budget Slider */}
+      <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-success" />
+            <p className="text-sm font-medium">Budget</p>
+          </div>
+          <span className="text-lg font-bold text-success">
+            {formData.budget === 100 
+              ? "$100-" 
+              : formData.budget === 5000 
+              ? "$5,000+" 
+              : `$${formData.budget.toLocaleString()}`}
+          </span>
+        </div>
+        <Slider
+          value={[formData.budget]}
+          onValueChange={(value) => setFormData({ ...formData, budget: value[0] })}
+          min={100}
+          max={5000}
+          step={50}
+          className="w-full"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>$100-</span>
+          <span>$5,000+</span>
         </div>
       </div>
 

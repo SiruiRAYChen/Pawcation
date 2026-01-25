@@ -93,6 +93,7 @@ def generate_travel_itinerary(
     pet_info: dict,
     num_adults: int = 2,
     num_children: int = 0,
+    budget: float = None,
 ):
     """
     Generate a detailed, pet-friendly travel itinerary using Gemini AI.
@@ -113,6 +114,18 @@ def generate_travel_itinerary(
     
     personality_str = ", ".join(pet_personality) if pet_personality else "friendly"
     
+    budget_instruction = ""
+    if budget:
+        budget_instruction = f"""
+BUDGET CONSTRAINT:
+- Total trip budget: ${budget:.2f}
+- You MUST keep the total estimated cost within this budget
+- Include realistic cost estimates for each item (flights, hotels, meals, activities)
+- Provide a mix of budget-friendly and quality options that respect the budget
+- Each item should have an "estimated_cost" field with a reasonable dollar amount
+- The sum of all estimated costs should NOT exceed ${budget:.2f}
+"""
+    
     prompt = f"""You are a pet-first travel planning expert. Generate a detailed travel itinerary for a trip from {origin} to {destination}, from {start_date} to {end_date}.
 
 TRAVELING PARTY:
@@ -129,6 +142,8 @@ CRITICAL INSTRUCTIONS:
 5. Include specific pet amenities (water bowls, pet beds, outdoor spaces, etc.)
 6. Suggest pet-friendly activities appropriate for the pet's energy level and size.
 7. Include alerts for weather conditions that might affect the pet.
+{budget_instruction}
+8. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item with a dollar amount.
 
 Return a JSON object with this EXACT structure:
 {{
@@ -150,7 +165,8 @@ Return a JSON object with this EXACT structure:
           "title": "Airline Recommendation",
           "subtitle": "Airlines like United, Delta allow in-cabin pets (<20 lbs) • Book directly with airline",
           "compliance": "approved",
-          "complianceNote": "In-cabin travel available for small pets"
+          "complianceNote": "In-cabin travel available for small pets",
+          "estimated_cost": 350.00
         }},
         {{
           "id": "2",
@@ -159,7 +175,8 @@ Return a JSON object with this EXACT structure:
           "title": "Pet-Friendly Hotel Name",
           "subtitle": "Check-in time",
           "compliance": "approved",
-          "complianceNote": "No pet fee, amenities provided"
+          "complianceNote": "No pet fee, amenities provided",
+          "estimated_cost": 180.00
         }},
         {{
           "id": "3",
@@ -168,7 +185,8 @@ Return a JSON object with this EXACT structure:
           "title": "Restaurant name",
           "subtitle": "Description",
           "compliance": "conditional",
-          "complianceNote": "Outdoor seating only"
+          "complianceNote": "Outdoor seating only",
+          "estimated_cost": 75.00
         }}
       ]
     }}
@@ -224,6 +242,19 @@ Make sure all recommendations are realistic for {destination} and appropriate fo
         if start != -1 and end != -1:
             try:
                 result = json.loads(text[start : end + 1])
+                
+                # Calculate total estimated cost
+                total_cost = 0
+                if "days" in result:
+                    for day in result["days"]:
+                        for item in day.get("items", []):
+                            if "estimated_cost" in item:
+                                total_cost += item["estimated_cost"]
+                
+                result["total_estimated_cost"] = round(total_cost, 2)
+                if budget:
+                    result["budget"] = budget
+                
                 return result
             except json.JSONDecodeError as e:
                 return {"error": f"Could not parse JSON from Gemini output: {str(e)}", "raw": text}
@@ -241,6 +272,7 @@ def generate_road_trip_itinerary(
     num_adults: int = 2,
     num_children: int = 0,
     is_round_trip: bool = False,
+    budget: float = None,
 ):
     """
     Generate a detailed, pet-friendly road trip itinerary using Gemini AI.
@@ -270,6 +302,17 @@ IMPORTANT FOR ROUND TRIP:
 - Consider alternative highways, different national/state parks, or coastal vs inland routes
 """
     
+    budget_instruction = ""
+    if budget:
+        budget_instruction = f"""
+BUDGET CONSTRAINT:
+- Total trip budget: ${budget:.2f}
+- You MUST keep the total estimated cost within this budget
+- Include realistic cost estimates for gas, tolls, hotels, meals, and activities
+- Each item should have an "estimated_cost" field with a reasonable dollar amount
+- The sum of all estimated costs should NOT exceed ${budget:.2f}
+"""
+    
     prompt = f"""You are a pet-first road trip planning expert. Generate a detailed {trip_type_note} road trip itinerary from {origin} to {destination}, from {start_date} to {end_date}.
 
 TRAVELING PARTY:
@@ -289,6 +332,8 @@ CRITICAL INSTRUCTIONS FOR ROAD TRIPS:
 8. **Weather and safety** - Alert about temperature concerns (hot car warnings), road conditions, or elevation changes that might affect pets.
 9. **Meal and water breaks** - Regular stops for {pet_name} to eat, drink, and rest.
 {round_trip_instruction}
+{budget_instruction}
+10. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item (gas, tolls, hotels, meals, activities).
 
 Return a JSON object with this EXACT structure:
 {{
@@ -310,7 +355,8 @@ Return a JSON object with this EXACT structure:
           "title": "Depart {origin} via Highway 1",
           "subtitle": "Scenic coastal route • 120 miles • ~2.5 hours",
           "compliance": "approved",
-          "complianceNote": "Pet-friendly route with rest stops"
+          "complianceNote": "Pet-friendly route with rest stops",
+          "estimated_cost": 25.00
         }},
         {{
           "id": "2",
@@ -319,7 +365,8 @@ Return a JSON object with this EXACT structure:
           "title": "Dog-Friendly Beach Stop",
           "subtitle": "30-minute break for {pet_name} to run and play",
           "compliance": "approved",
-          "complianceNote": "Off-leash area available"
+          "complianceNote": "Off-leash area available",
+          "estimated_cost": 0.00
         }},
         {{
           "id": "3",
@@ -328,7 +375,8 @@ Return a JSON object with this EXACT structure:
           "title": "Pet-Friendly Roadside Cafe",
           "subtitle": "Outdoor patio with water bowls",
           "compliance": "approved",
-          "complianceNote": "Dogs welcome on patio"
+          "complianceNote": "Dogs welcome on patio",
+          "estimated_cost": 45.00
         }},
         {{
           "id": "4",
@@ -336,7 +384,8 @@ Return a JSON object with this EXACT structure:
           "type": "transport",
           "title": "Continue to Destination City",
           "subtitle": "Highway 101 North • 95 miles • ~2 hours",
-          "compliance": "approved"
+          "compliance": "approved",
+          "estimated_cost": 20.00
         }},
         {{
           "id": "5",
@@ -345,7 +394,8 @@ Return a JSON object with this EXACT structure:
           "title": "Pet-Friendly Hotel Name",
           "subtitle": "No pet fee • Dog park on-site • Pet welcome kit",
           "compliance": "approved",
-          "complianceNote": "Pets up to 50 lbs welcome"
+          "complianceNote": "Pets up to 50 lbs welcome",
+          "estimated_cost": 150.00
         }}
       ]
     }}
@@ -409,11 +459,22 @@ Return ONLY valid JSON."""
         if start != -1 and end != -1:
             try:
                 result = json.loads(text[start : end + 1])
+                
+                # Calculate total estimated cost
+                total_cost = 0
+                if "days" in result:
+                    for day in result["days"]:
+                        for item in day.get("items", []):
+                            if "estimated_cost" in item:
+                                total_cost += item["estimated_cost"]
+                
+                result["total_estimated_cost"] = round(total_cost, 2)
+                if budget:
+                    result["budget"] = budget
+                
                 return result
             except json.JSONDecodeError as e:
                 return {"error": f"Could not parse JSON from Gemini output: {str(e)}", "raw": text}
         return {"error": "Could not find JSON in Gemini output.", "raw": text}
     except Exception as e:
         return {"error": f"Gemini request failed: {str(e)}"}
-
-

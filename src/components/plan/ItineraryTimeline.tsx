@@ -1,7 +1,7 @@
 import { PawIcon } from "@/components/icons/PawIcon";
 import { ComplianceTag } from "@/components/ui/ComplianceTag";
 import { motion } from "framer-motion";
-import { AlertTriangle, Coffee, Hotel, Plane, Thermometer, TreePine } from "lucide-react";
+import { AlertTriangle, Coffee, DollarSign, Hotel, Plane, Thermometer, TreePine } from "lucide-react";
 
 interface TimelineItem {
   id: string;
@@ -12,6 +12,7 @@ interface TimelineItem {
   compliance: "approved" | "conditional" | "notAllowed";
   complianceNote?: string;
   icon?: React.ReactNode;
+  estimated_cost?: number;
 }
 
 interface ItineraryDay {
@@ -23,6 +24,8 @@ interface ItineraryDay {
 
 interface ItineraryTimelineProps {
   days: ItineraryDay[];
+  total_estimated_cost?: number;
+  budget?: number;
 }
 
 const timeLabels = {
@@ -38,9 +41,48 @@ const typeIcons = {
   activity: TreePine,
 };
 
-export const ItineraryTimeline = ({ days }: ItineraryTimelineProps) => {
+export const ItineraryTimeline = ({ days, total_estimated_cost, budget }: ItineraryTimelineProps) => {
+  const isOverBudget = budget && total_estimated_cost && total_estimated_cost > budget;
+  
   return (
     <div className="space-y-6">
+      {/* Budget Summary */}
+      {(total_estimated_cost || budget) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 rounded-xl border-2 ${
+            isOverBudget 
+              ? "bg-destructive/10 border-destructive" 
+              : "bg-success/10 border-success"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className={`w-5 h-5 ${isOverBudget ? "text-destructive" : "text-success"}`} />
+              <div>
+                <p className="text-sm font-semibold">Estimated Total Cost</p>
+                {budget && (
+                  <p className="text-xs text-muted-foreground">
+                    Budget: ${budget.toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-2xl font-bold ${isOverBudget ? "text-destructive" : "text-success"}`}>
+                ${total_estimated_cost?.toLocaleString() || "0"}
+              </p>
+              {budget && total_estimated_cost && (
+                <p className={`text-xs ${isOverBudget ? "text-destructive" : "text-success"}`}>
+                  {isOverBudget ? "Over budget" : `${Math.round((total_estimated_cost / budget) * 100)}% of budget`}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
       {days.map((day, dayIndex) => (
         <motion.div
           key={day.date}
@@ -117,6 +159,11 @@ export const ItineraryTimeline = ({ days }: ItineraryTimelineProps) => {
                           </p>
                           <h4 className="font-bold text-foreground">{item.title}</h4>
                           <p className="text-sm text-muted-foreground">{item.subtitle}</p>
+                          {item.estimated_cost !== undefined && item.estimated_cost > 0 && (
+                            <p className="text-xs font-semibold text-success mt-1">
+                              ${item.estimated_cost.toFixed(2)}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <ComplianceTag status={item.compliance} />

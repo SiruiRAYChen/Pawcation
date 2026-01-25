@@ -17,6 +17,8 @@ export const PlanTab = () => {
   const [isFlipping, setIsFlipping] = useState(false);
   const [tripData, setTripData] = useState<TripSearchData | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [totalCost, setTotalCost] = useState<number | undefined>(undefined);
+  const [budget, setBudget] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlans, setSavedPlans] = useState<Plan[]>([]);
@@ -77,6 +79,7 @@ export const PlanTab = () => {
           num_adults: data.adults,
           num_children: data.children,
           is_round_trip: data.isRoundTrip ?? false,
+          budget: data.budget,
         });
       } else {
         response = await api.generateItinerary({
@@ -87,10 +90,13 @@ export const PlanTab = () => {
           pet_id: data.selectedPet.pet_id!,
           num_adults: data.adults,
           num_children: data.children,
+          budget: data.budget,
         });
       }
 
       setItinerary(response.days);
+      setTotalCost(response.total_estimated_cost);
+      setBudget(response.budget);
       toast({
         title: `${data.travelMode === "roadtrip" ? "Road trip" : "Itinerary"} generated! 🎉`,
         description: `Your pet-friendly ${data.travelMode === "roadtrip" ? "road trip" : "trip"} to ${data.destination} is ready`,
@@ -168,6 +174,8 @@ export const PlanTab = () => {
     try {
       const parsedItinerary = JSON.parse(plan.detailed_itinerary || "{}");
       setItinerary(parsedItinerary.days || []);
+      setTotalCost(parsedItinerary.total_estimated_cost);
+      setBudget(parsedItinerary.budget || plan.budget);
       setTripData({
         origin: plan.origin || "",
         destination: plan.destination || "",
@@ -178,6 +186,7 @@ export const PlanTab = () => {
         children: plan.num_children,
         travelMode: plan.trip_type === "Road Trip" ? "roadtrip" : "flight",
         isRoundTrip: plan.is_round_trip ?? false,
+        budget: plan.budget || 2000,
       });
       setShowItinerary(true);
     } catch (error) {
@@ -449,7 +458,11 @@ export const PlanTab = () => {
 
                 {/* Itinerary */}
                 <div className="px-4 pb-6">
-                  <ItineraryTimeline days={itinerary} />
+                  <ItineraryTimeline 
+                    days={itinerary} 
+                    total_estimated_cost={totalCost}
+                    budget={budget}
+                  />
                 </div>
               </div>
             )}

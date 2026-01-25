@@ -293,6 +293,7 @@ def generate_itinerary(request: ItineraryGenerateRequest, db: Session = Depends(
         pet_info=pet_info,
         num_adults=request.num_adults,
         num_children=request.num_children,
+        budget=request.budget,
     )
     
     if "error" in result:
@@ -329,6 +330,7 @@ def generate_road_trip(request: RoadTripGenerateRequest, db: Session = Depends(g
         num_adults=request.num_adults,
         num_children=request.num_children,
         is_round_trip=request.is_round_trip,
+        budget=request.budget,
     )
     
     if "error" in result:

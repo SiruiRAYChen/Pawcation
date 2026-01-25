@@ -71,6 +71,7 @@ export interface ItineraryItem {
   subtitle: string;
   compliance: "approved" | "conditional" | "notAllowed";
   complianceNote?: string;
+  estimated_cost?: number;
 }
 
 export interface ItineraryDay {
@@ -82,6 +83,8 @@ export interface ItineraryDay {
 
 export interface ItineraryResponse {
   days: ItineraryDay[];
+  total_estimated_cost?: number;
+  budget?: number;
 }
 
 export interface ItineraryGenerateRequest {
@@ -92,6 +95,7 @@ export interface ItineraryGenerateRequest {
   pet_id: number;
   num_adults: number;
   num_children: number;
+  budget?: number;
 }
 
 export interface RoadTripGenerateRequest {
@@ -102,7 +106,8 @@ export interface RoadTripGenerateRequest {
   pet_id: number;
   num_adults: number;
   num_children: number;
-  is_round_trip: boolean;
+  is_round_trip?: boolean;
+  budget?: number;
 }
 
 // API Client

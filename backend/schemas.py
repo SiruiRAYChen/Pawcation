@@ -170,6 +170,7 @@ class ItineraryGenerateRequest(BaseModel):
     pet_id: int
     num_adults: int = 2
     num_children: int = 0
+    budget: Optional[float] = None
 
 
 class RoadTripGenerateRequest(BaseModel):
@@ -181,6 +182,7 @@ class RoadTripGenerateRequest(BaseModel):
     num_adults: int = 2
     num_children: int = 0
     is_round_trip: bool = False
+    budget: Optional[float] = None
 
 
 class ItineraryAlert(BaseModel):
@@ -196,6 +198,7 @@ class ItineraryItem(BaseModel):
     subtitle: str
     compliance: str
     complianceNote: Optional[str] = None
+    estimated_cost: Optional[float] = None
 
 
 class ItineraryDay(BaseModel):
@@ -207,3 +210,5 @@ class ItineraryDay(BaseModel):
 
 class ItineraryResponse(BaseModel):
     days: List[ItineraryDay]
+    total_estimated_cost: Optional[float] = None
+    budget: Optional[float] = None
