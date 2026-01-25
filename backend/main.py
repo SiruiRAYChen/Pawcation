@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 
 import uvicorn
@@ -29,6 +30,29 @@ app.add_middleware(
 def startup_event():
     """Initialize database on startup"""
     init_db()
+
+
+def calculate_pet_age(date_of_birth: date) -> str:
+    """Calculate pet age from date of birth and return as string"""
+    if not date_of_birth:
+        return "unknown age"
+    
+    today = date.today()
+    age_years = today.year - date_of_birth.year
+    
+    # Adjust if birthday hasn't occurred yet this year
+    if (today.month, today.day) < (date_of_birth.month, date_of_birth.day):
+        age_years -= 1
+    
+    if age_years < 1:
+        age_months = (today.year - date_of_birth.year) * 12 + today.month - date_of_birth.month
+        if age_months < 1:
+            return "puppy/kitten"
+        return f"{age_months} months old"
+    elif age_years == 1:
+        return "1 year old"
+    else:
+        return f"{age_years} years old"
 
 
 @app.get("/")
@@ -278,7 +302,7 @@ def generate_itinerary(request: ItineraryGenerateRequest, db: Session = Depends(
     pet_info = {
         "name": pet.name,
         "breed": pet.breed,
-        "age": pet.age,
+        "age": calculate_pet_age(pet.date_of_birth),
         "size": pet.size,
         "personality": pet.personality or [],
         "health": pet.health,
@@ -314,7 +338,7 @@ def generate_road_trip(request: RoadTripGenerateRequest, db: Session = Depends(g
     pet_info = {
         "name": pet.name,
         "breed": pet.breed,
-        "age": pet.age,
+        "age": calculate_pet_age(pet.date_of_birth),
         "size": pet.size,
         "personality": pet.personality or [],
         "health": pet.health,
