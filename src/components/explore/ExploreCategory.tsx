@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Plane, Hotel, UtensilsCrossed, TreePine, ChevronRight } from "lucide-react";
+import { Plane, Building, UtensilsCrossed, TreePine, Stethoscope, ShoppingBag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ExploreCategoryProps {
   onCategoryClick?: (category: string) => void;
@@ -7,65 +8,90 @@ interface ExploreCategoryProps {
 
 const categories = [
   {
-    id: "transport",
-    title: "Transportation",
-    description: "Airlines, trains & car rentals",
+    id: "transit",
+    title: "Transit",
+    description: "Airlines, Trains, Policies",
     icon: Plane,
-    color: "bg-accent/10 text-accent",
-    count: "50+ policies",
+    color: "bg-purple-50 text-purple-600",
   },
   {
-    id: "accommodation",
-    title: "Accommodation",
-    description: "Hotels, Airbnbs & rentals",
-    icon: Hotel,
-    color: "bg-primary/10 text-primary",
-    count: "200+ listings",
+    id: "accommodation", 
+    title: "Hotels",
+    description: "Hotels, Airbnb, Pet Fees",
+    icon: Building,
+    color: "bg-blue-50 text-blue-600",
   },
   {
     id: "dining",
-    title: "Dining",
-    description: "Pet-friendly restaurants & cafes",
+    title: "Dining", 
+    description: "Restaurants, Cafes, Pet Menu",
     icon: UtensilsCrossed,
-    color: "bg-secondary text-secondary-foreground",
-    count: "1000+ spots",
+    color: "bg-pink-50 text-pink-600",
   },
   {
     id: "outdoor",
-    title: "Outdoor & Parks",
-    description: "Trails, beaches & dog parks",
+    title: "Outdoor",
+    description: "Parks, Hiking, Leash Rules",
     icon: TreePine,
-    color: "bg-success/10 text-success",
-    count: "500+ places",
+    color: "bg-green-50 text-green-600",
+  },
+  {
+    id: "vet",
+    title: "Hospital",
+    description: "Clinics, Emergency, Specialists",
+    icon: Stethoscope,
+    color: "bg-red-50 text-red-600",
+  },
+  {
+    id: "services",
+    title: "Pet Services",
+    description: "Grooming, Boarding, Supplies",
+    icon: ShoppingBag,
+    color: "bg-orange-50 text-orange-600",
   },
 ];
 
 export const ExploreCategory = ({ onCategoryClick }: ExploreCategoryProps) => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === 'transit') {
+      navigate('/transit');
+    } else {
+      // For other categories, use the callback if provided
+      onCategoryClick?.(categoryId);
+    }
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-2 gap-3 px-2">
       {categories.map((category, index) => {
         const Icon = category.icon;
         return (
           <motion.button
             key={category.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
-            onClick={() => onCategoryClick?.(category.id)}
-            className="w-full flex items-center gap-4 p-4 bg-card rounded-2xl shadow-paw border border-border hover:border-primary/30 hover:shadow-paw-lg transition-all active:scale-[0.98]"
+            onClick={() => handleCategoryClick(category.id)}
+            className="h-28 flex flex-col items-start justify-start p-4 bg-card rounded-2xl shadow-paw border border-border hover:border-primary/30 hover:shadow-paw-lg transition-all active:scale-95"
           >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${category.color}`}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-bold text-foreground">{category.title}</h3>
-              <p className="text-sm text-muted-foreground">{category.description}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                {category.count}
-              </span>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <div className="flex items-center gap-4 w-full">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${category.color}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="flex-1 text-left flex flex-col">
+                <div className="h-6 flex items-center">
+                  <h3 className="font-bold text-base text-foreground leading-tight">
+                    {category.title}
+                  </h3>
+                </div>
+                <div className="mt-1">
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    {category.description}
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.button>
         );
