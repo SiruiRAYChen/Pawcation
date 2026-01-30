@@ -107,7 +107,7 @@ Added Google Maps autocomplete functionality to the trip planning form and updat
 ## Environment Variables
 Backend uses Google Maps API key from environment:
 ```python
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "AIzaSyByLgNG16tQrEhJXBf30S6GlQ6OfZ66PT4")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 ```
 
 Fallback key is hardcoded, but for production should be in `.env` file.
