@@ -111,6 +111,36 @@ export interface RoadTripGenerateRequest {
   budget?: number;
 }
 
+// Memory types
+export interface MemoryPhoto {
+  photo_id: number;
+  trip_id: number;
+  user_id: number;
+  local_path: string;
+  city_name?: string;
+  created_at: string;
+}
+
+export interface MemoryPhotoCreate {
+  trip_id: number;
+  user_id: number;
+  local_path: string;
+  city_name?: string;
+}
+
+export interface PastTrip extends Plan {
+  cover_photo?: string;
+  photo_count: number;
+  visited_cities?: string[];
+}
+
+export interface VisitedCity {
+  city_name: string;
+  trip_ids: number[];
+  photo_count: number;
+  trip_color: string;
+}
+
 // API Client
 class PawcationAPI {
   private baseUrl: string;
@@ -291,6 +321,40 @@ class PawcationAPI {
     return this.request<Plan>('/api/plans/save', {
       method: 'POST',
       body: JSON.stringify(planData),
+    });
+  }
+
+  // ========== MEMORY ENDPOINTS ==========
+
+  async getPastTrips(userId: number): Promise<PastTrip[]> {
+    return this.request<PastTrip[]>(`/api/memories/past-trips/${userId}`);
+  }
+
+  async getTripPhotos(tripId: number, cityName?: string): Promise<MemoryPhoto[]> {
+    const params = cityName ? `?city_name=${encodeURIComponent(cityName)}` : '';
+    return this.request<MemoryPhoto[]>(`/api/memories/photos/${tripId}${params}`);
+  }
+
+  async addMemoryPhoto(photo: MemoryPhotoCreate): Promise<MemoryPhoto> {
+    return this.request<MemoryPhoto>('/api/memories/photos', {
+      method: 'POST',
+      body: JSON.stringify(photo),
+    });
+  }
+
+  async deleteMemoryPhoto(photoId: number): Promise<void> {
+    return this.request<void>(`/api/memories/photos/${photoId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getVisitedCities(userId: number): Promise<VisitedCity[]> {
+    return this.request<VisitedCity[]>(`/api/memories/visited-cities/${userId}`);
+  }
+
+  async deletePastTrip(tripId: number): Promise<void> {
+    return this.request<void>(`/api/memories/trips/${tripId}`, {
+      method: 'DELETE',
     });
   }
 }

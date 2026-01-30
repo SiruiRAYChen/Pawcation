@@ -142,8 +142,9 @@ CRITICAL INSTRUCTIONS:
 5. Include specific pet amenities (water bowls, pet beds, outdoor spaces, etc.)
 6. Suggest pet-friendly activities appropriate for the pet's energy level and size.
 7. Include alerts for weather conditions that might affect the pet.
+8. **LOCATION FORMAT REQUIREMENT: ALL city names in "subtitle" fields MUST use the format "City, State" (e.g., "Boston, Massachusetts", "Los Angeles, California"). This is critical for map functionality.**
 {budget_instruction}
-8. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item with a dollar amount.
+9. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item with a dollar amount.
 
 Return a JSON object with this EXACT structure:
 {{
@@ -173,7 +174,7 @@ Return a JSON object with this EXACT structure:
           "time": "afternoon",
           "type": "accommodation",
           "title": "Pet-Friendly Hotel Name",
-          "subtitle": "Check-in time",
+          "subtitle": "Los Angeles, California • Check-in time",
           "compliance": "approved",
           "complianceNote": "No pet fee, amenities provided",
           "estimated_cost": 180.00
@@ -183,7 +184,7 @@ Return a JSON object with this EXACT structure:
           "time": "evening",
           "type": "dining",
           "title": "Restaurant name",
-          "subtitle": "Description",
+          "subtitle": "Los Angeles, California • Description",
           "compliance": "conditional",
           "complianceNote": "Outdoor seating only",
           "estimated_cost": 75.00
@@ -198,7 +199,7 @@ Valid values for fields:
 - type: "transport", "accommodation", "dining", "activity"
 - compliance: "approved", "conditional", "notAllowed"
 
-Make sure all recommendations are realistic for {destination} and appropriate for a {pet_breed}. Return ONLY valid JSON."""
+Make sure all recommendations are realistic for {destination} and appropriate for a {pet_breed}. REMEMBER: All city references in subtitles must include the state (e.g., "Boston, Massachusetts", not just "Boston"). Return ONLY valid JSON."""
 
     payload = {
         "contents": [
@@ -331,9 +332,10 @@ CRITICAL INSTRUCTIONS FOR ROAD TRIPS:
 7. **Pack list reminders** - Occasionally remind about essentials: water bowls, leash, waste bags, pet first aid kit, comfort items.
 8. **Weather and safety** - Alert about temperature concerns (hot car warnings), road conditions, or elevation changes that might affect pets.
 9. **Meal and water breaks** - Regular stops for {pet_name} to eat, drink, and rest.
+10. **LOCATION FORMAT REQUIREMENT: ALL city names in "subtitle" and "dayLabel" fields MUST use the format "City, State" (e.g., "Boston, Massachusetts", "Chicago, Illinois"). This is CRITICAL for map functionality. When mentioning cities along the route, always include the state.**
 {round_trip_instruction}
 {budget_instruction}
-10. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item (gas, tolls, hotels, meals, activities).
+11. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item (gas, tolls, hotels, meals, activities).
 
 Return a JSON object with this EXACT structure:
 {{
@@ -363,7 +365,7 @@ Return a JSON object with this EXACT structure:
           "time": "morning",
           "type": "activity",
           "title": "Dog-Friendly Beach Stop",
-          "subtitle": "30-minute break for {pet_name} to run and play",
+          "subtitle": "Santa Barbara, California • 30-minute break for {pet_name} to run and play",
           "compliance": "approved",
           "complianceNote": "Off-leash area available",
           "estimated_cost": 0.00
@@ -373,7 +375,7 @@ Return a JSON object with this EXACT structure:
           "time": "afternoon",
           "type": "dining",
           "title": "Pet-Friendly Roadside Cafe",
-          "subtitle": "Outdoor patio with water bowls",
+          "subtitle": "San Luis Obispo, California • Outdoor patio with water bowls",
           "compliance": "approved",
           "complianceNote": "Dogs welcome on patio",
           "estimated_cost": 45.00
@@ -392,7 +394,7 @@ Return a JSON object with this EXACT structure:
           "time": "evening",
           "type": "accommodation",
           "title": "Pet-Friendly Hotel Name",
-          "subtitle": "No pet fee • Dog park on-site • Pet welcome kit",
+          "subtitle": "San Francisco, California • No pet fee • Dog park on-site • Pet welcome kit",
           "compliance": "approved",
           "complianceNote": "Pets up to 50 lbs welcome",
           "estimated_cost": 150.00

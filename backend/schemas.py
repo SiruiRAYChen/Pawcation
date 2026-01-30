@@ -212,3 +212,45 @@ class ItineraryResponse(BaseModel):
     days: List[ItineraryDay]
     total_estimated_cost: Optional[float] = None
     budget: Optional[float] = None
+
+
+# Memory Photo Schemas
+class MemoryPhotoBase(BaseModel):
+    local_path: str
+    city_name: Optional[str] = None
+
+
+class MemoryPhotoCreate(MemoryPhotoBase):
+    trip_id: int
+    user_id: int
+
+
+class MemoryPhotoResponse(MemoryPhotoBase):
+    photo_id: int
+    trip_id: int
+    user_id: int
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class PastTripResponse(PlanResponse):
+    """Extended plan response with photo metadata for past trips"""
+    cover_photo: Optional[str] = None  # URL/path of cover photo
+    photo_count: int = 0
+    visited_cities: Optional[List[str]] = None  # List of cities visited
+
+    class Config:
+        from_attributes = True
+
+
+class VisitedCityResponse(BaseModel):
+    city_name: str
+    trip_ids: List[int]
+    photo_count: int
+    trip_color: str  # Color for map pin
+
+    class Config:
+        from_attributes = True
+

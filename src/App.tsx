@@ -14,8 +14,9 @@ import NotFound from "./pages/NotFound";
 import { PlanTab } from "./pages/PlanTab";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProfileTab } from "./pages/ProfileTab";
-import { TransitPage } from "./pages/TransitPage";
 import { TransitDetailPage } from "./pages/TransitDetailPage";
+import { TransitPage } from "./pages/TransitPage";
+import { TripDetailPage } from "./pages/TripDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route path="/add-pet" element={<AddPetPage />} />
             <Route path="/add-pet/:petId" element={<AddPetPage />} />
+            <Route path="/memories/trip/:tripId" element={<TripDetailPage />} />
             <Route path="/transit" element={<TransitPage />} />
             <Route path="/transit/:providerId" element={<TransitDetailPage />} />
             <Route path="*" element={<NotFound />} />

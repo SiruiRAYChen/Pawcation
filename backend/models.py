@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import (JSON, Column, Date, Float, ForeignKey, Integer, String,
-                        Text)
+from sqlalchemy import (JSON, Column, Date, DateTime, Float, ForeignKey,
+                        Integer, String, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -83,3 +83,24 @@ class Plan(Base):
     
     # Relationship
     owner = relationship("User", back_populates="plans")
+
+
+class MemoryPhoto(Base):
+    __tablename__ = "memory_photos"
+
+    photo_id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("plans.plan_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    
+    # Photo storage (local path or URL)
+    local_path = Column(String, nullable=False)  # Local storage path
+    
+    # Location info
+    city_name = Column(String, nullable=True)  # City-level location (e.g., "Boston, Massachusetts")
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    trip = relationship("Plan")
+    user = relationship("User")

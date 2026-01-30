@@ -7,6 +7,7 @@ import { api, Pet } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Calendar, Car, DollarSign, MapPin, Plane, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PlaceAutocomplete } from "./PlaceAutocomplete";
 
 interface TripSearchFormProps {
   onSearch: (data: TripSearchData) => void;
@@ -127,28 +128,20 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
 
       {/* Origin & Destination */}
       <div className="space-y-3">
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder="From (e.g., San Francisco)"
-            value={formData.origin}
-            onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
-            className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
-          />
-        </div>
-        <div className="relative">
-          {travelMode === "flight" ? (
-            <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
-          ) : (
-            <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent" />
-          )}
-          <Input
-            placeholder="To (e.g., Los Angeles)"
-            value={formData.destination}
-            onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-            className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
-          />
-        </div>
+        <PlaceAutocomplete
+          value={formData.origin}
+          onChange={(value) => setFormData({ ...formData, origin: value })}
+          placeholder="From (e.g., San Francisco, CA)"
+          className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
+          icon={<MapPin />}
+        />
+        <PlaceAutocomplete
+          value={formData.destination}
+          onChange={(value) => setFormData({ ...formData, destination: value })}
+          placeholder="To (e.g., Los Angeles, CA)"
+          className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
+          icon={travelMode === "flight" ? <Plane className="text-accent" /> : <Car className="text-accent" />}
+        />
       </div>
 
       {/* Round Trip Toggle (only for road trips) */}
