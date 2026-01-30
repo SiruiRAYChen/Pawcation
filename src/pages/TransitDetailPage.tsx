@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, AlertTriangle, Plane, Train, Weight, Ruler } from "lucide-react";
+import { ArrowLeft, ExternalLink, AlertTriangle, Plane, Train, Weight, Ruler, Shield, Calendar, Syringe, Dog } from "lucide-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 export const TransitDetailPage = () => {
@@ -37,6 +37,14 @@ export const TransitDetailPage = () => {
   }
 
   const IconComponent = provider.id === 'amtrak' ? Train : Plane;
+  
+  // Try to load logo image
+  let logoSrc = '';
+  try {
+    logoSrc = new URL(`../assets/logos/${provider.id === 'american' ? 'aa' : provider.id}.png`, import.meta.url).href;
+  } catch {
+    // Logo file not found, will use icon fallback
+  }
 
   return (
     <div className="min-h-screen pb-24 bg-background">
@@ -62,11 +70,26 @@ export const TransitDetailPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-green-50/50 rounded-2xl p-6 border border-green-300"
+          className="bg-gray-50 rounded-2xl p-6 border border-gray-200"
         >
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center border border-green-300">
-              <IconComponent className="w-10 h-10 text-green-600" />
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center border border-gray-200 overflow-hidden">
+              {logoSrc ? (
+                <img 
+                  src={logoSrc} 
+                  alt={`${provider.name} logo`} 
+                  className="w-16 h-16 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const iconEl = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (iconEl) iconEl.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <IconComponent 
+                className="w-10 h-10 text-gray-600" 
+                style={{ display: logoSrc ? 'none' : 'block' }}
+              />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground mb-2">{provider.name}</h1>
@@ -117,7 +140,7 @@ export const TransitDetailPage = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="cabin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-green-50 rounded-xl border border-green-300">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-xl border border-gray-200">
               <TabsTrigger 
                 value="cabin" 
                 className="rounded-lg data-[state=active]:bg-green-600 data-[state=active]:text-white"
@@ -134,11 +157,11 @@ export const TransitDetailPage = () => {
 
             {/* Cabin Content */}
             <TabsContent value="cabin" className="mt-6">
-              <div className="bg-green-50/50 rounded-2xl p-6 border border-green-300 space-y-4">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 space-y-4">
                 {/* Fee */}
-                <div className="text-center pb-4 border-b border-green-300">
-                  <p className="text-green-700 font-medium mb-1">Cabin Fee</p>
-                  <p className="text-4xl font-bold text-green-900">
+                <div className="text-center pb-4 border-b border-gray-200">
+                  <p className="text-gray-700 font-medium mb-1">Cabin Fee</p>
+                  <p className="text-4xl font-bold text-gray-900">
                     ${provider.cabin.fee}
                   </p>
                 </div>
@@ -146,7 +169,7 @@ export const TransitDetailPage = () => {
                 {/* Details Grid */}
                 <div className="grid grid-cols-1 gap-4">
                   {/* Weight Limit */}
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-green-300">
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
                     <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                       <Weight className="w-5 h-5 text-green-600" />
                     </div>
@@ -158,7 +181,7 @@ export const TransitDetailPage = () => {
 
                   {/* Dimensions */}
                   {provider.cabin.max_dimensions && (
-                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-green-300">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
                       <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                         <Ruler className="w-5 h-5 text-green-600" />
                       </div>
@@ -168,11 +191,108 @@ export const TransitDetailPage = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Carrier Requirements */}
+                  {provider.cabin.carrier_requirements && (
+                    <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Carrier Requirements</p>
+                        <p className="text-sm text-muted-foreground">{provider.cabin.carrier_requirements}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Age Requirement */}
+                  {provider.cabin.age_requirement && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Age Requirement</p>
+                        <p className="text-sm text-muted-foreground">{provider.cabin.age_requirement}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Health Certificate */}
+                  {provider.cabin.health_certificate && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <Shield className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Health Certificate</p>
+                        <p className="text-sm text-muted-foreground">{provider.cabin.health_certificate}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Vaccine Requirements */}
+                {provider.cabin.vaccine_requirements && provider.cabin.vaccine_requirements.length > 0 && (
+                  provider.cabin.vaccine_requirements.length === 1 ? (
+                    <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Syringe className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Vaccine Requirements</p>
+                        <p className="text-sm text-muted-foreground">{provider.cabin.vaccine_requirements[0]}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Syringe className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground mb-2">Vaccine Requirements</p>
+                        <ul className="space-y-1">
+                          {provider.cabin.vaccine_requirements.map((req: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0" />
+                              <span className="text-sm text-muted-foreground">{req}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )
+                )}
+
+                {/* Breed Restrictions */}
+                {provider.cabin.breed_restrictions && provider.cabin.breed_restrictions !== "None" && provider.cabin.breed_restrictions !== "None specified" && (
+                  <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <Dog className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Breed Restrictions</p>
+                      <p className="text-sm text-muted-foreground">{provider.cabin.breed_restrictions}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Booking Requirements */}
+                {provider.cabin.booking_requirements && (
+                  <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Booking Requirements</p>
+                      <p className="text-sm text-muted-foreground">{provider.cabin.booking_requirements}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Notes */}
                 {provider.cabin.notes && provider.cabin.notes.length > 0 && (
-                  <div className="p-4 bg-white rounded-xl border border-green-300">
+                  <div className="p-4 bg-white rounded-xl border border-gray-200">
                     <h4 className="font-medium text-foreground mb-2">Additional Notes</h4>
                     <ul className="space-y-1">
                       {provider.cabin.notes.map((note: string, index: number) => (
@@ -190,11 +310,11 @@ export const TransitDetailPage = () => {
             {/* Cargo Content */}
             <TabsContent value="cargo" className="mt-6">
               {provider.cargo?.allowed ? (
-                <div className="bg-green-50/50 rounded-2xl p-6 border border-green-300 space-y-4">
+                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 space-y-4">
                   {/* Fee */}
-                  <div className="text-center pb-4 border-b border-green-300">
-                    <p className="text-green-700 font-medium mb-1">Cargo Fee</p>
-                    <p className="text-4xl font-bold text-green-900">
+                  <div className="text-center pb-4 border-b border-gray-200">
+                    <p className="text-gray-700 font-medium mb-1">Cargo Fee</p>
+                    <p className="text-4xl font-bold text-gray-900">
                       ${provider.cargo.fee}
                     </p>
                   </div>
@@ -203,7 +323,7 @@ export const TransitDetailPage = () => {
                   <div className="grid grid-cols-1 gap-4">
                     {/* Weight Limit */}
                     {provider.cargo.weight_limit && (
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-green-300">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
                         <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                           <Weight className="w-5 h-5 text-green-600" />
                         </div>
@@ -216,16 +336,47 @@ export const TransitDetailPage = () => {
 
                     {/* Restrictions */}
                     {provider.cargo.restrictions && (
-                      <div className="p-4 bg-white rounded-xl border border-green-300">
-                        <h4 className="font-medium text-foreground mb-2">Restrictions</h4>
-                        <p className="text-sm text-muted-foreground">{provider.cargo.restrictions}</p>
+                      <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                        <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <Dog className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Restrictions</p>
+                          <p className="text-sm text-muted-foreground">{provider.cargo.restrictions}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Temperature Restrictions */}
+                    {provider.cargo.temperature_restrictions && (
+                      <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                        <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <AlertTriangle className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Temperature Restrictions</p>
+                          <p className="text-sm text-muted-foreground">{provider.cargo.temperature_restrictions}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Carrier Requirements */}
+                    {provider.cargo.carrier_requirements && (
+                      <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200">
+                        <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <Shield className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Crate Requirements</p>
+                          <p className="text-sm text-muted-foreground">{provider.cargo.carrier_requirements}</p>
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {/* Notes */}
                   {provider.cargo.notes && provider.cargo.notes.length > 0 && (
-                    <div className="p-4 bg-white rounded-xl border border-green-300">
+                    <div className="p-4 bg-white rounded-xl border border-gray-200">
                       <h4 className="font-medium text-foreground mb-2">Additional Notes</h4>
                       <ul className="space-y-1">
                         {provider.cargo.notes.map((note: string, index: number) => (

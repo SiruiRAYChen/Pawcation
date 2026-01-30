@@ -115,7 +115,7 @@ export const MapsPage = () => {
     };
 
     geocodeCities();
-  }, [visitedCities]);
+  }, [visitedCities.length]);
 
   // Add photo mutation
   const addPhotoMutation = useMutation({
