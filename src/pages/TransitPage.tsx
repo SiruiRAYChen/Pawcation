@@ -232,6 +232,7 @@ export const TransitPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Fetch pets with real-time data on component focus
   const { data: pets, isLoading, error, refetch } = useQuery({
@@ -415,8 +416,18 @@ export const TransitPage = () => {
 
   // Filter and categorize providers
   const filteredProviders = useMemo(() => {
+    // First apply search filter
+    let providers = TRANSIT_DATA;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      providers = providers.filter(provider => 
+        provider.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Then apply pet-based filter
     if (!selectedPet) {
-      return TRANSIT_DATA.map(provider => ({
+      return providers.map(provider => ({
         ...provider,
         cabinAvailable: true,
         cargoAvailable: provider.cargo?.allowed || false,
@@ -424,7 +435,7 @@ export const TransitPage = () => {
       }));
     }
 
-    return TRANSIT_DATA.map(provider => {
+    return providers.map(provider => {
       const cabinOk = canUseCabin(provider, selectedPet);
       const cargoOk = canUseCargo(provider, selectedPet);
       
@@ -435,7 +446,7 @@ export const TransitPage = () => {
         visible: cabinOk || cargoOk // Only show if at least one option is available
       };
     }).filter(p => p.visible);
-  }, [selectedPet]);
+  }, [selectedPet, searchQuery]);
 
   const handlePetToggle = (petId: number) => {
     // Single selection logic: toggle on/off
@@ -491,6 +502,8 @@ export const TransitPage = () => {
           <Input
             placeholder="Search airlines or trains..."
             className="pl-12 h-12 bg-card border-border rounded-2xl shadow-sm text-base"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </motion.div>
       </div>
@@ -542,7 +555,7 @@ export const TransitPage = () => {
       ) : null}
 
       {/* Filter Result Count */}
-      {selectedPet && (
+      {(selectedPet || searchQuery.trim()) && (
         <div className="px-4 py-2">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -551,7 +564,12 @@ export const TransitPage = () => {
           >
             <AlertCircle className="w-4 h-4 text-green-600" />
             <span className="text-sm text-green-800">
-              Showing {filteredProviders.length} {filteredProviders.length === 1 ? 'option' : 'options'} suitable for {selectedPet.name}
+              {selectedPet && searchQuery.trim() 
+                ? `Showing ${filteredProviders.length} ${filteredProviders.length === 1 ? 'option' : 'options'} matching "${searchQuery}" suitable for ${selectedPet.name}`
+                : selectedPet
+                ? `Showing ${filteredProviders.length} ${filteredProviders.length === 1 ? 'option' : 'options'} suitable for ${selectedPet.name}`
+                : `Found ${filteredProviders.length} ${filteredProviders.length === 1 ? 'result' : 'results'} for "${searchQuery}"`
+              }
             </span>
           </motion.div>
         </div>
@@ -575,9 +593,16 @@ export const TransitPage = () => {
             className="flex flex-col items-center justify-center py-12 px-6 bg-amber-50 border border-amber-200 rounded-2xl"
           >
             <AlertCircle className="w-12 h-12 text-amber-600 mb-4" />
-            <h3 className="text-lg font-semibold text-amber-900 mb-2">No Suitable Options Found</h3>
+            <h3 className="text-lg font-semibold text-amber-900 mb-2">
+              {searchQuery.trim() ? 'No Results Found' : 'No Suitable Options Found'}
+            </h3>
             <p className="text-sm text-amber-800 text-center">
-              No airlines match {selectedPet?.name}'s criteria directly. Please check specialized pet transport services or contact airlines for special arrangements.
+              {searchQuery.trim() 
+                ? `No airlines match "${searchQuery}". Try a different search term.`
+                : selectedPet
+                ? `No airlines match ${selectedPet.name}'s criteria directly. Please check specialized pet transport services or contact airlines for special arrangements.`
+                : 'No transit options available.'
+              }
             </p>
           </motion.div>
         ) : (
