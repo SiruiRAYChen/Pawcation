@@ -1,24 +1,31 @@
+import { auth, db } from '@/lib/firebase';
+import {
+    createUserWithEmailAndPassword,
+    User as FirebaseUser,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface User {
-  user_id: number;
+  user_id: string;
   email: string;
   name?: string;
   avatar_url?: string;
 }
 
 interface AuthContextType {
-  // 状态
   user: User | null;
-  userId: number | null;
+  userId: string | null;
   email: string | null;
   loading: boolean;
   isAuthenticated: boolean;
   
-  // 方法
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
 
@@ -28,156 +35,104 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 初始化: 检查localStorage中是否有保存的用户信息
+  // Listen to Firebase auth state changes
   useEffect(() => {
-    const checkAuth = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       try {
-        const savedUserId = localStorage.getItem('userId');
-        const savedEmail = localStorage.getItem('userEmail');
-        const savedName = localStorage.getItem('userName');
-        const savedAvatarUrl = localStorage.getItem('userAvatarUrl');
-        
-        if (savedUserId && savedEmail) {
-          setUser({
-            user_id: parseInt(savedUserId),
-            email: savedEmail,
-            name: savedName || undefined,
-            avatar_url: savedAvatarUrl || undefined,
-          });
+        if (firebaseUser) {
+          // Fetch additional user data from Firestore
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUser({
+              user_id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: userData.name,
+              avatar_url: userData.avatar_url,
+            });
+          } else {
+            // Create user document if it doesn't exist
+            await setDoc(userDocRef, {
+              email: firebaseUser.email,
+              name: null,
+              avatar_url: null,
+              created_at: new Date(),
+            });
+            
+            setUser({
+              user_id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+            });
+          }
+        } else {
+          setUser(null);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userAvatarUrl');
+        console.error('Error fetching user data:', error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    checkAuth();
+    return () => unsubscribe();
   }, []);
 
-  // 登录
+  // Login with Firebase Auth
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      const newUser = {
-        user_id: data.user_id,
-        email: data.email,
-        name: data.name,
-        avatar_url: data.avatar_url,
-      };
-
-      setUser(newUser);
-      
-      // 保存到localStorage
-      localStorage.setItem('userId', String(newUser.user_id));
-      localStorage.setItem('userEmail', newUser.email);
-      if (newUser.name) localStorage.setItem('userName', newUser.name);
-      // Only store avatar URL if it's not a base64 image to avoid quota errors
-      if (newUser.avatar_url && !newUser.avatar_url.startsWith('data:') && newUser.avatar_url.length < 500) {
-        localStorage.setItem('userAvatarUrl', newUser.avatar_url);
-      }
-      
-    } catch (error) {
+      await signInWithEmailAndPassword(auth, email, password);
+      // User state will be updated by onAuthStateChanged
+    } catch (error: any) {
       console.error('Login error:', error);
-      throw error;
+      throw new Error(error.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // 注册
+  // Signup with Firebase Auth
   const signup = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: userCredential.user.email,
+        name: null,
+        avatar_url: null,
+        created_at: new Date(),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Signup failed');
-      }
-
-      const data = await response.json();
-      const newUser = {
-        user_id: data.user_id,
-        email: data.email,
-        name: data.name,
-        avatar_url: data.avatar_url,
-      };
-
-      setUser(newUser);
       
-      // 保存到localStorage
-      localStorage.setItem('userId', String(newUser.user_id));
-      localStorage.setItem('userEmail', newUser.email);
-      if (newUser.name) localStorage.setItem('userName', newUser.name);
-      // Only store avatar URL if it's not a base64 image to avoid quota errors
-      if (newUser.avatar_url && !newUser.avatar_url.startsWith('data:') && newUser.avatar_url.length < 500) {
-        localStorage.setItem('userAvatarUrl', newUser.avatar_url);
-      }
-      
-    } catch (error) {
+      // User state will be updated by onAuthStateChanged
+    } catch (error: any) {
       console.error('Signup error:', error);
-      throw error;
+      throw new Error(error.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // 登出
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userAvatarUrl');
+  // Logout
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
 
-  // 更新用户信息
+  // Update user info in Firestore
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      
-      // 更新localStorage
-      if (updatedUser.name) {
-        localStorage.setItem('userName', updatedUser.name);
-      } else {
-        localStorage.removeItem('userName');
-      }
-      
-      // Don't store large base64 images in localStorage - only store if it's a URL
-      if (updatedUser.avatar_url) {
-        // Only store if it's a reasonable size (not a base64 image)
-        // Base64 images start with "data:" and are usually very large
-        if (!updatedUser.avatar_url.startsWith('data:') && updatedUser.avatar_url.length < 500) {
-          localStorage.setItem('userAvatarUrl', updatedUser.avatar_url);
-        } else {
-          // For base64 images, don't store in localStorage to avoid quota errors
-          localStorage.removeItem('userAvatarUrl');
-        }
-      } else {
-        localStorage.removeItem('userAvatarUrl');
-      }
     }
   };
 

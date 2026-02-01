@@ -10,7 +10,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "deploy:functions": "cd functions && npm run build && cd .. && firebase deploy --only functions",
+    "firebase:emulators": "firebase emulators:start"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.2.7",
@@ -48,6 +52,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
+    "firebase": "^10.14.1",
     "framer-motion": "^12.26.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",

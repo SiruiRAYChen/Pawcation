@@ -17,3 +17,23 @@ backend/.env
 # Build outputs
 dist/
 build/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc.local
+functions/lib/
+functions/node_modules/
+functions/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

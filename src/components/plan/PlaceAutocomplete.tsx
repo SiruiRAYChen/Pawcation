@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { getPlacesAutocomplete } from "@/lib/firebaseApi";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -50,17 +51,7 @@ export const PlaceAutocomplete = ({
     console.log("Fetching predictions for:", input);
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/places/autocomplete?input=${encodeURIComponent(input)}`
-      );
-      
-      if (!response.ok) {
-        console.error("API response not OK:", response.status, response.statusText);
-        setPredictions([]);
-        return;
-      }
-      
-      const data = await response.json();
+      const data = await getPlacesAutocomplete(input);
       console.log("Received predictions:", data.predictions?.length || 0);
       
       if (data.predictions && data.predictions.length > 0) {
