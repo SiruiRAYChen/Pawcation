@@ -7,10 +7,13 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AddPetPage from "./pages/AddPetPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ExploreTab } from "./pages/ExploreTab";
+import { HospitalPage } from "./pages/HospitalPage";
+import { HotelsPage } from "./pages/HotelsPage";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import { MemoriesTab } from "./pages/MemoriesTab";
 import NotFound from "./pages/NotFound";
+import { PetServicesPage } from "./pages/PetServicesPage";
 import { PlanTab } from "./pages/PlanTab";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProfileTab } from "./pages/ProfileTab";
@@ -48,6 +51,9 @@ const App = () => (
             <Route path="/memories/trip/:tripId" element={<TripDetailPage />} />
             <Route path="/transit" element={<TransitPage />} />
             <Route path="/transit/:providerId" element={<TransitDetailPage />} />
+            <Route path="/hotels" element={<HotelsPage />} />
+            <Route path="/hospital" element={<HospitalPage />} />
+            <Route path="/pet-services" element={<PetServicesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -57,6 +57,12 @@ export const ExploreCategory = ({ onCategoryClick }: ExploreCategoryProps) => {
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId === 'transit') {
       navigate('/transit');
+    } else if (categoryId === 'accommodation') {
+      navigate('/hotels');
+    } else if (categoryId === 'vet') {
+      navigate('/hospital');
+    } else if (categoryId === 'services') {
+      navigate('/pet-services');
     } else {
       // For other categories, use the callback if provided
       onCategoryClick?.(categoryId);
