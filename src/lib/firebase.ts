@@ -7,13 +7,13 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB45Jge0-TUpgYjvh_cICl8XPLJ-n0huEE",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "pawcation-c45d6.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "pawcation-c45d6",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "pawcation-c45d6.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "626035465977",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:626035465977:web:9922db084a03847e9c0c28",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-Y7QXVYCLTM"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
