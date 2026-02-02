@@ -217,24 +217,38 @@ router.delete('/:petId', async (req, res) => {
 
 // Analyze pet image
 router.post('/analyze-image', async (req, res): Promise<void> => {
+  console.log('Received analyze-image request');
+  console.log('Headers:', req.headers);
+  
   try {
     const contentType = req.headers['content-type'] || '';
     
     if (!contentType.includes('multipart/form-data')) {
+      console.error('Invalid content type:', contentType);
       res.status(400).json({ detail: 'Content type must be multipart/form-data' });
       return;
     }
 
     // Create a promise-based approach to handle busboy
     const processUpload = new Promise<{ buffer: Buffer; mimeType: string }>((resolve, reject) => {
-      const busboy = Busboy({ headers: req.headers });
+      const busboy = Busboy({ 
+        headers: req.headers,
+        limits: {
+          fileSize: 10 * 1024 * 1024, // 10MB limit
+          files: 1
+        }
+      });
+      
       let imageBuffer: Buffer | null = null;
       let mimeType = 'image/jpeg';
-      let fileProcessed = false;
+      let fileReceived = false;
+      let fileEnded = false;
 
       busboy.on('file', (fieldname, file, info) => {
+        console.log('Busboy file event:', fieldname, info);
         const { mimeType: mime } = info;
-        mimeType = mime;
+        mimeType = mime || 'image/jpeg';
+        fileReceived = true;
         
         const chunks: Buffer[] = [];
         
@@ -243,33 +257,65 @@ router.post('/analyze-image', async (req, res): Promise<void> => {
         });
         
         file.on('end', () => {
-          imageBuffer = Buffer.concat(chunks);
-          fileProcessed = true;
+          console.log('File stream ended, chunks:', chunks.length);
+          if (chunks.length > 0) {
+            imageBuffer = Buffer.concat(chunks);
+            console.log('Image buffer created, size:', imageBuffer.length);
+          }
+          fileEnded = true;
+        });
+        
+        file.on('error', (err) => {
+          console.error('File stream error:', err);
+          reject(err);
         });
       });
 
       busboy.on('finish', () => {
-        if (!fileProcessed || !imageBuffer) {
-          reject(new Error('No image file provided'));
+        console.log('Busboy finish event, fileReceived:', fileReceived, 'fileEnded:', fileEnded);
+        
+        if (!fileReceived || !fileEnded || !imageBuffer || imageBuffer.length === 0) {
+          reject(new Error('No valid image file provided or file was empty'));
           return;
         }
+        
+        console.log('Resolving with buffer size:', imageBuffer.length, 'mimeType:', mimeType);
         resolve({ buffer: imageBuffer, mimeType });
       });
 
       busboy.on('error', (error: any) => {
+        console.error('Busboy error:', error);
         reject(error);
       });
-
-      req.pipe(busboy);
+      
+      // Important: Check if req.rawBody exists (Cloud Functions sometimes provides this)
+      const rawBody = (req as any).rawBody;
+      if (rawBody) {
+        console.log('Using rawBody from Cloud Functions');
+        busboy.end(rawBody);
+      } else {
+        console.log('Piping request to busboy');
+        req.pipe(busboy);
+      }
     });
 
-    // Wait for upload to complete
-    const { buffer, mimeType } = await processUpload;
+    // Wait for upload to complete with timeout
+    const uploadPromise = processUpload;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000);
+    });
+    
+    const { buffer, mimeType } = await Promise.race([uploadPromise, timeoutPromise]);
+    
+    console.log('Upload complete, analyzing image...');
     
     // Analyze the image
     const result = await analyzePetImage(buffer, mimeType);
     
+    console.log('Analysis result:', result);
+    
     if (result.error) {
+      console.error('Analysis error:', result.error);
       res.status(500).json({ detail: result.error });
       return;
     }
@@ -277,7 +323,8 @@ router.post('/analyze-image', async (req, res): Promise<void> => {
     res.json(result);
   } catch (error: any) {
     console.error('Error analyzing image:', error);
-    res.status(500).json({ detail: error.message });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ detail: error.message || 'Failed to analyze image' });
   }
 });
 

@@ -31,13 +31,24 @@ router.get('/past-trips/:userId', async (req, res) => {
     for (const planDoc of pastPlans) {
       const planData = planDoc.data();
       
-      // Get photos for this trip
+      // Get photos for this trip, sorted by creation time
       const photosSnapshot = await db.collection('memoryPhotos')
         .where('tripId', '==', planDoc.id)
         .get();
       
-      const photos = photosSnapshot.docs.map(doc => doc.data());
-      const coverPhoto = photos.length > 0 ? photos[0].localPath : null;
+      // Sort photos in memory and get the most recent one as cover
+      const sortedPhotos = photosSnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            localPath: data.localPath,
+            createdAt: data.createdAt,
+            _sortTime: data.createdAt?.toMillis() || 0,
+          };
+        })
+        .sort((a, b) => b._sortTime - a._sortTime);
+      
+      const coverPhoto = sortedPhotos.length > 0 ? sortedPhotos[0].localPath : null;
       
       // Extract visited cities
       let visitedCities: string[] = [];
@@ -80,7 +91,7 @@ router.get('/past-trips/:userId', async (req, res) => {
         origin: planData.origin,
         pet_ids: planData.petIds,
         cover_photo: coverPhoto,
-        photo_count: photos.length,
+        photo_count: sortedPhotos.length,
         visited_cities: visitedCities,
       });
     }
@@ -97,6 +108,8 @@ router.get('/photos/:tripId', async (req, res) => {
   try {
     const { tripId } = req.params;
     const { city_name } = req.query;
+    
+    console.log('Getting photos for trip:', tripId, 'city:', city_name);
 
     let query = db.collection('memoryPhotos').where('tripId', '==', tripId);
     
@@ -104,23 +117,32 @@ router.get('/photos/:tripId', async (req, res) => {
       query = query.where('cityName', '==', city_name);
     }
 
-    const photosSnapshot = await query.orderBy('createdAt', 'desc').get();
+    // Fetch without orderBy to avoid composite index requirement
+    const photosSnapshot = await query.get();
+    
+    console.log('Found photos:', photosSnapshot.size);
 
-    const photos = photosSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        photo_id: doc.id,
-        trip_id: data.tripId,
-        user_id: data.userId,
-        local_path: data.localPath,
-        city_name: data.cityName,
-        created_at: data.createdAt?.toDate().toISOString() || null,
-      };
-    });
+    // Map and sort in memory
+    const photos = photosSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          photo_id: doc.id,
+          trip_id: data.tripId,
+          user_id: data.userId,
+          local_path: data.localPath,
+          city_name: data.cityName,
+          created_at: data.createdAt?.toDate().toISOString() || null,
+          _sortTime: data.createdAt?.toMillis() || 0,
+        };
+      })
+      .sort((a, b) => b._sortTime - a._sortTime) // Sort descending by time
+      .map(({ _sortTime, ...photo }) => photo); // Remove the temporary sort field
 
     res.json(photos);
   } catch (error: any) {
     console.error('Error getting trip photos:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ detail: error.message });
   }
 });
@@ -129,9 +151,16 @@ router.get('/photos/:tripId', async (req, res) => {
 router.post('/photos', async (req, res) => {
   try {
     const { trip_id, user_id, local_path, city_name } = req.body;
+    
+    console.log('Adding memory photo:', { trip_id, user_id, city_name, has_local_path: !!local_path });
+
+    if (!trip_id || !user_id || !local_path) {
+      return res.status(400).json({ detail: 'Missing required fields: trip_id, user_id, local_path' });
+    }
 
     const tripDoc = await db.collection('plans').doc(trip_id).get();
     if (!tripDoc.exists) {
+      console.error('Trip not found:', trip_id);
       return res.status(404).json({ detail: 'Trip not found' });
     }
 
@@ -146,6 +175,8 @@ router.post('/photos', async (req, res) => {
     const photoRef = await db.collection('memoryPhotos').add(photoData);
     const photoDoc = await photoRef.get();
     const data = photoDoc.data();
+    
+    console.log('Photo added successfully:', photoRef.id);
 
     return res.status(201).json({
       photo_id: photoDoc.id,
@@ -157,6 +188,7 @@ router.post('/photos', async (req, res) => {
     });
   } catch (error: any) {
     console.error('Error adding memory photo:', error);
+    console.error('Error stack:', error.stack);
     return res.status(500).json({ detail: error.message });
   }
 });
@@ -184,18 +216,30 @@ router.get('/visited-cities/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const today = new Date().toISOString().split('T')[0];
+    
+    console.log('Getting visited cities for user:', userId);
 
+    // Get all plans for the user, then filter in memory (avoid Firestore index requirement)
     const plansSnapshot = await db.collection('plans')
       .where('userId', '==', userId)
-      .where('endDate', '<', today)
       .get();
+    
+    console.log('Found plans:', plansSnapshot.size);
+
+    // Filter for past trips
+    const pastPlans = plansSnapshot.docs.filter(doc => {
+      const endDate = doc.data().endDate;
+      return endDate && endDate < today;
+    });
+    
+    console.log('Past trips:', pastPlans.length);
 
     const cityTrips: { [key: string]: string[] } = {};
     const tripColors: { [key: string]: string } = {};
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
 
     let idx = 0;
-    for (const planDoc of plansSnapshot.docs) {
+    for (const planDoc of pastPlans) {
       const planData = planDoc.data();
       tripColors[planDoc.id] = colors[idx % colors.length];
       idx++;
@@ -218,33 +262,49 @@ router.get('/visited-cities/:userId', async (req, res) => {
       }
 
       for (const city of cities) {
-        if (!cityTrips[city]) {
-          cityTrips[city] = [];
+        if (city && city.trim()) {
+          if (!cityTrips[city]) {
+            cityTrips[city] = [];
+          }
+          cityTrips[city].push(planDoc.id);
         }
-        cityTrips[city].push(planDoc.id);
       }
     }
+    
+    console.log('City trips:', Object.keys(cityTrips).length, 'cities');
 
     const result = [];
     for (const [cityName, tripIds] of Object.entries(cityTrips)) {
-      const photoCount = await db.collection('memoryPhotos')
-        .where('cityName', '==', cityName)
-        .where('tripId', 'in', tripIds.slice(0, 10)) // Firestore 'in' limit is 10
-        .get();
+      // Handle Firestore 'in' query limit of 10 items
+      let photoCount = 0;
+      
+      if (tripIds.length > 0) {
+        // Split into batches of 10 for Firestore 'in' query
+        for (let i = 0; i < tripIds.length; i += 10) {
+          const batch = tripIds.slice(i, i + 10);
+          const photoSnapshot = await db.collection('memoryPhotos')
+            .where('cityName', '==', cityName)
+            .where('tripId', 'in', batch)
+            .get();
+          photoCount += photoSnapshot.size;
+        }
+      }
 
       const tripColor = tripColors[tripIds[0]] || '#4ECDC4';
 
       result.push({
         city_name: cityName,
         trip_ids: tripIds,
-        photo_count: photoCount.size,
+        photo_count: photoCount,
         trip_color: tripColor,
       });
     }
-
+    
+    console.log('Returning', result.length, 'cities');
     res.json(result);
   } catch (error: any) {
     console.error('Error getting visited cities:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ detail: error.message });
   }
 });

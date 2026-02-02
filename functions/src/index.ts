@@ -5,6 +5,9 @@ import * as functions from 'firebase-functions';
 // Initialize Firebase Admin by importing config (must be first)
 import './config/firebase';
 
+// Import the secret definition
+import { geminiApiKeySecret } from './services/geminiService';
+
 // Now import routes (they'll use the initialized admin SDK)
 import { memoryRoutes } from './routes/memories';
 import { petRoutes } from './routes/pets';
@@ -41,7 +44,9 @@ app.use('/api/places', placesRoutes);
 // Export the API as a Cloud Function with secrets
 export const api = functions
   .runWith({
-    secrets: ['GEMINI_API_KEY', 'GOOGLE_MAPS_API_KEY'],
+    secrets: [geminiApiKeySecret],
+    memory: '1GB',
+    timeoutSeconds: 60,
   })
   .https.onRequest(app);
 
