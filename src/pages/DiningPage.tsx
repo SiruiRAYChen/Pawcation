@@ -7,23 +7,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { motion } from "framer-motion";
 
-interface Hospital {
+interface Restaurant {
   id: string;
   name: string;
   address?: string;
   photoUrl?: string;
-  rating?: number;
 }
 
-export const HospitalPage = () => {
+export const DiningPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getCurrentLocation, isGettingLocation } = useGeolocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const searchHospitals = async (location?: { latitude: number; longitude: number }) => {
+  const searchRestaurants = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
       toast({
         title: "Please enter a city name or use location",
@@ -59,7 +58,7 @@ export const HospitalPage = () => {
         searchLocation = geocodeData.results[0].geometry.location;
       }
       
-      // Use the new Places API (Text Search) for veterinary hospitals
+      // Use the new Places API (Text Search) for pet-friendly restaurants
       const placesResponse = await fetch(
         "https://places.googleapis.com/v1/places:searchText",
         {
@@ -67,10 +66,10 @@ export const HospitalPage = () => {
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos,places.rating"
+            "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos"
           },
           body: JSON.stringify({
-            textQuery: location ? "veterinary hospital" : `veterinary hospital in ${searchQuery}`,
+            textQuery: location ? "pet friendly restaurant" : `pet friendly restaurant in ${searchQuery}`,
             locationBias: {
               circle: {
                 center: {
@@ -88,30 +87,28 @@ export const HospitalPage = () => {
       const placesData = await placesResponse.json();
       
       if (placesData.places && placesData.places.length > 0) {
-        const hospitalResults = placesData.places.map((place: any) => {
-          // Get photo URL if available
+        const restaurantResults = placesData.places.map((place: any) => {
           const photoUrl = place.photos?.[0]?.name
             ? `https://places.googleapis.com/v1/${place.photos[0].name}/media?key=${apiKey}&maxHeightPx=400&maxWidthPx=400`
             : undefined;
           
           return {
             id: place.id,
-            name: place.displayName?.text || "Unknown Hospital",
+            name: place.displayName?.text || "Unknown Restaurant",
             address: place.formattedAddress,
-            photoUrl,
-            rating: place.rating
+            photoUrl
           };
         });
-        setHospitals(hospitalResults);
+        setRestaurants(restaurantResults);
       } else {
         toast({
-          title: "No hospitals found",
+          title: "No restaurants found",
           description: "Try searching in a different city",
         });
-        setHospitals([]);
+        setRestaurants([]);
       }
     } catch (error) {
-      console.error("Error searching hospitals:", error);
+      console.error("Error searching restaurants:", error);
       toast({
         title: "Search failed",
         description: "Please try again later",
@@ -124,7 +121,7 @@ export const HospitalPage = () => {
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      searchHospitals();
+      searchRestaurants();
     }
   };
 
@@ -133,7 +130,7 @@ export const HospitalPage = () => {
       const location = await getCurrentLocation();
       setSearchQuery("📍 Your current location");
       // Search directly using coordinates
-      searchHospitals({ latitude: location.latitude, longitude: location.longitude });
+      searchRestaurants({ latitude: location.latitude, longitude: location.longitude });
     } catch (error) {
       toast({
         title: "Location Error",
@@ -156,7 +153,7 @@ export const HospitalPage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold">Pet Hospitals</h1>
+          <h1 className="text-xl font-bold">Pet-Friendly Dining</h1>
         </div>
       </div>
 
@@ -184,7 +181,7 @@ export const HospitalPage = () => {
             />
           </div>
           <Button
-            onClick={searchHospitals}
+            onClick={searchRestaurants}
             disabled={isLoading || isGettingLocation}
             className="px-6"
           >
@@ -195,10 +192,10 @@ export const HospitalPage = () => {
 
       {/* Results */}
       <div className="px-4 space-y-3">
-        {hospitals.length > 0 ? (
-          hospitals.map((hospital, index) => (
+        {restaurants.length > 0 ? (
+          restaurants.map((restaurant, index) => (
             <motion.div
-              key={hospital.id}
+              key={restaurant.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -207,10 +204,10 @@ export const HospitalPage = () => {
               <div className="flex gap-3">
                 {/* Image */}
                 <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                  {hospital.photoUrl ? (
+                  {restaurant.photoUrl ? (
                     <img
-                      src={hospital.photoUrl}
-                      alt={hospital.name}
+                      src={restaurant.photoUrl}
+                      alt={restaurant.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -222,22 +219,12 @@ export const HospitalPage = () => {
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-base text-foreground line-clamp-1">
-                      {hospital.name}
-                    </h3>
-                    {hospital.rating && (
-                      <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary">
-                          {hospital.rating.toFixed(1)}
-                        </span>
-                        <span className="text-xs text-primary">★</span>
-                      </div>
-                    )}
-                  </div>
-                  {hospital.address && (
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                    {restaurant.name}
+                  </h3>
+                  {restaurant.address && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {hospital.address}
+                      {restaurant.address}
                     </p>
                   )}
                 </div>
@@ -248,8 +235,8 @@ export const HospitalPage = () => {
           <div className="text-center py-12">
             <p className="text-muted-foreground">
               {isLoading
-                ? "Searching for hospitals..."
-                : "Search for pet hospitals in your destination city"}
+                ? "Searching for pet-friendly restaurants..."
+                : "Search for pet-friendly restaurants in your destination city"}
             </p>
           </div>
         )}

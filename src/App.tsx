@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AddPetPage from "./pages/AddPetPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
+import { DiningPage } from "./pages/DiningPage";
 import { ExploreTab } from "./pages/ExploreTab";
 import { HospitalPage } from "./pages/HospitalPage";
 import { HotelsPage } from "./pages/HotelsPage";
@@ -13,6 +14,7 @@ import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import { MemoriesTab } from "./pages/MemoriesTab";
 import NotFound from "./pages/NotFound";
+import { OutdoorActivityPage } from "./pages/OutdoorActivityPage";
 import { PetServicesPage } from "./pages/PetServicesPage";
 import { PlanTab } from "./pages/PlanTab";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/transit/:providerId" element={<TransitDetailPage />} />
             <Route path="/hotels" element={<HotelsPage />} />
             <Route path="/hospital" element={<HospitalPage />} />
+            <Route path="/dining" element={<DiningPage />} />
+            <Route path="/outdoor" element={<OutdoorActivityPage />} />
             <Route path="/pet-services" element={<PetServicesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

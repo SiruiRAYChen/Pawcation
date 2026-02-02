@@ -59,6 +59,10 @@ export const ExploreCategory = ({ onCategoryClick }: ExploreCategoryProps) => {
       navigate('/transit');
     } else if (categoryId === 'accommodation') {
       navigate('/hotels');
+    } else if (categoryId === 'dining') {
+      navigate('/dining');
+    } else if (categoryId === 'outdoor') {
+      navigate('/outdoor');
     } else if (categoryId === 'vet') {
       navigate('/hospital');
     } else if (categoryId === 'services') {

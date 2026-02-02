@@ -1,9 +1,10 @@
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { motion } from "framer-motion";
 
 interface Hotel {
@@ -17,14 +18,15 @@ interface Hotel {
 export const HotelsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getCurrentLocation, isGettingLocation } = useGeolocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const searchHotels = async () => {
-    if (!searchQuery.trim()) {
+  const searchHotels = async (location?: { latitude: number; longitude: number }) => {
+    if (!searchQuery.trim() && !location) {
       toast({
-        title: "Please enter a city name",
+        title: "Please enter a city name or use location",
         variant: "destructive",
       });
       return;
@@ -32,26 +34,30 @@ export const HotelsPage = () => {
 
     setIsLoading(true);
     try {
-      // Google Places API (New) - Text Search
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      let searchLocation;
       
-      // First, geocode the city to get coordinates
-      const geocodeResponse = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`
-      );
-      const geocodeData = await geocodeResponse.json();
-      
-      if (geocodeData.status !== "OK" || !geocodeData.results[0]) {
-        toast({
-          title: "City not found",
-          description: "Please try a different city name",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (location) {
+        // Use provided coordinates directly
+        searchLocation = location;
+      } else {
+        // Geocode the city to get coordinates
+        const geocodeResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`
+        );
+        const geocodeData = await geocodeResponse.json();
+        
+        if (geocodeData.status !== "OK" || !geocodeData.results[0]) {
+          toast({
+            title: "City not found",
+            description: "Please try a different city name",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        searchLocation = geocodeData.results[0].geometry.location;
       }
-
-      const location = geocodeData.results[0].geometry.location;
       
       // Use the new Places API (Text Search)
       const placesResponse = await fetch(
@@ -64,14 +70,14 @@ export const HotelsPage = () => {
             "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos,places.rating"
           },
           body: JSON.stringify({
-            textQuery: `pet friendly hotels in ${searchQuery}`,
+            textQuery: location ? "pet friendly hotel" : `pet friendly hotels in ${searchQuery}`,
             locationBias: {
               circle: {
                 center: {
-                  latitude: location.lat,
-                  longitude: location.lng
+                  latitude: searchLocation.latitude || searchLocation.lat,
+                  longitude: searchLocation.longitude || searchLocation.lng
                 },
-                radius: 50000.0
+                radius: 10000.0 // 10km radius for nearby search
               }
             },
             maxResultCount: 10
@@ -122,6 +128,21 @@ export const HotelsPage = () => {
     }
   };
 
+  const handleLocationSearch = async () => {
+    try {
+      const location = await getCurrentLocation();
+      setSearchQuery("📍 Your current location");
+      // Search directly using coordinates
+      searchHotels({ latitude: location.latitude, longitude: location.longitude });
+    } catch (error) {
+      toast({
+        title: "Location Error",
+        description: error instanceof Error ? error.message : "Unable to get location",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-6">
       {/* Header */}
@@ -143,19 +164,28 @@ export const HotelsPage = () => {
       <div className="px-4 py-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full z-10"
+              onClick={handleLocationSearch}
+              disabled={isGettingLocation || isLoading}
+            >
+              <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
+            </Button>
+            <Search className="absolute left-11 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Enter city name..."
+              placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pl-10"
+              className="pl-20"
             />
           </div>
           <Button
             onClick={searchHotels}
-            disabled={isLoading}
+            disabled={isLoading || isGettingLocation}
             className="px-6"
           >
             {isLoading ? "Searching..." : "Search"}
