@@ -116,6 +116,7 @@ router.get('/:planId', async (req, res) => {
       budget: data?.budget,
       origin: data?.origin,
       pet_ids: data?.petIds,
+      memo_items: data?.memoItems || [],
     });
   } catch (error: any) {
     console.error('Error getting plan:', error);
@@ -150,6 +151,7 @@ router.get('/user/:userId/plans', async (req, res) => {
         budget: data.budget,
         origin: data.origin,
         pet_ids: data.petIds,
+        memo_items: data.memoItems || [],
       };
     });
 
@@ -329,6 +331,15 @@ router.post('/save', async (req, res) => {
       return res.status(404).json({ detail: 'User not found' });
     }
 
+    // Initialize memo items from packing_memo if available
+    let memoItems: Array<{ item: string; checked: boolean }> = [];
+    if (detailed_itinerary?.packing_memo && Array.isArray(detailed_itinerary.packing_memo)) {
+      memoItems = detailed_itinerary.packing_memo.map((item: string) => ({
+        item,
+        checked: false,
+      }));
+    }
+
     const planData = {
       userId: user_id,
       origin,
@@ -342,6 +353,7 @@ router.post('/save', async (req, res) => {
       tripType: trip_type,
       isRoundTrip: is_round_trip || false,
       detailedItinerary: detailed_itinerary,
+      memoItems,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -366,6 +378,37 @@ router.post('/save', async (req, res) => {
     });
   } catch (error: any) {
     console.error('Error saving plan:', error);
+    return res.status(500).json({ detail: error.message });
+  }
+});
+
+// Update memo items for a plan
+router.patch('/:planId/memo-items', async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const { memo_items } = req.body;
+
+    if (!Array.isArray(memo_items)) {
+      return res.status(400).json({ detail: 'memo_items must be an array' });
+    }
+
+    const planRef = db.collection('plans').doc(planId);
+    const planDoc = await planRef.get();
+
+    if (!planDoc.exists) {
+      return res.status(404).json({ detail: 'Plan not found' });
+    }
+
+    await planRef.update({
+      memoItems: memo_items,
+    });
+
+    return res.json({ 
+      plan_id: planId,
+      memo_items,
+    });
+  } catch (error: any) {
+    console.error('Error updating memo items:', error);
     return res.status(500).json({ detail: error.message });
   }
 });

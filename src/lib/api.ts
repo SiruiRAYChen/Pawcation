@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Types
 export interface User {
-  user_id: number;
+  user_id: string;
   email: string;
   name?: string;
   avatar_url?: string;
@@ -16,8 +16,8 @@ export interface UserUpdate {
 }
 
 export interface Pet {
-  pet_id?: number;
-  user_id: number;
+  pet_id?: string;
+  user_id: string;
   name: string;
   breed?: string;
   date_of_birth?: string; // ISO date string (YYYY-MM-DD)
@@ -36,8 +36,8 @@ export interface Pet {
 }
 
 export interface Plan {
-  plan_id?: number;
-  user_id: number;
+  plan_id?: number | string;
+  user_id: string;
   start_date: string;
   end_date: string;
   trip_type?: string;
@@ -51,6 +51,7 @@ export interface Plan {
   budget?: number;
   origin?: string;
   pet_ids?: string;
+  memo_items?: Array<{ item: string; checked: boolean }>;
 }
 
 export interface UserFull extends User {
@@ -93,7 +94,7 @@ export interface ItineraryGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: number;
+  pet_id: string;
   num_adults: number;
   num_children: number;
   budget?: number;
@@ -104,7 +105,7 @@ export interface RoadTripGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: number;
+  pet_id: string;
   num_adults: number;
   num_children: number;
   is_round_trip?: boolean;
@@ -114,16 +115,16 @@ export interface RoadTripGenerateRequest {
 // Memory types
 export interface MemoryPhoto {
   photo_id: number;
-  trip_id: number;
-  user_id: number;
+  trip_id: number | string;
+  user_id: string;
   local_path: string;
   city_name?: string;
   created_at: string;
 }
 
 export interface MemoryPhotoCreate {
-  trip_id: number;
-  user_id: number;
+  trip_id: number | string;
+  user_id: string;
   local_path: string;
   city_name?: string;
 }
@@ -270,22 +271,22 @@ class PawcationAPI {
     });
   }
 
-  async getPlan(planId: number): Promise<Plan> {
+  async getPlan(planId: number | string): Promise<Plan> {
     return this.request<Plan>(`/api/plans/${planId}`);
   }
 
-  async getUserPlans(userId: number): Promise<Plan[]> {
+  async getUserPlans(userId: string): Promise<Plan[]> {
     return this.request<Plan[]>(`/api/users/${userId}/plans`);
   }
 
-  async updatePlan(planId: number, updates: Partial<Plan>): Promise<Plan> {
+  async updatePlan(planId: number | string, updates: Partial<Plan>): Promise<Plan> {
     return this.request<Plan>(`/api/plans/${planId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
-  async deletePlan(planId: number): Promise<void> {
+  async deletePlan(planId: number | string): Promise<void> {
     return this.request<void>(`/api/plans/${planId}`, {
       method: 'DELETE',
     });
@@ -306,7 +307,7 @@ class PawcationAPI {
   }
 
   async savePlan(planData: {
-    user_id: number;
+    user_id: string;
     origin: string;
     destination: string;
     start_date: string;
@@ -326,11 +327,11 @@ class PawcationAPI {
 
   // ========== MEMORY ENDPOINTS ==========
 
-  async getPastTrips(userId: number): Promise<PastTrip[]> {
+  async getPastTrips(userId: string): Promise<PastTrip[]> {
     return this.request<PastTrip[]>(`/api/memories/past-trips/${userId}`);
   }
 
-  async getTripPhotos(tripId: number, cityName?: string): Promise<MemoryPhoto[]> {
+  async getTripPhotos(tripId: number | string, cityName?: string): Promise<MemoryPhoto[]> {
     const params = cityName ? `?city_name=${encodeURIComponent(cityName)}` : '';
     return this.request<MemoryPhoto[]>(`/api/memories/photos/${tripId}${params}`);
   }
@@ -355,6 +356,13 @@ class PawcationAPI {
   async deletePastTrip(tripId: number): Promise<void> {
     return this.request<void>(`/api/memories/trips/${tripId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateMemoItems(planId: string, memoItems: Array<{ item: string; checked: boolean }>): Promise<{ plan_id: string; memo_items: Array<{ item: string; checked: boolean }> }> {
+    return this.request<{ plan_id: string; memo_items: Array<{ item: string; checked: boolean }> }>(`/api/plans/${planId}/memo-items`, {
+      method: 'PATCH',
+      body: JSON.stringify({ memo_items: memoItems }),
     });
   }
 }

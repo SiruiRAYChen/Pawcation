@@ -1,4 +1,6 @@
+import { FloatingMemoButton } from "@/components/plan/FloatingMemoButton";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
+import { PetPackingMemo } from "@/components/plan/PetPackingMemo";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,18 +29,24 @@ export const TripDetailPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  const [memoOpen, setMemoOpen] = useState(false);
 
   // Fetch trip details
   const { data: trip, isLoading: tripLoading } = useQuery({
     queryKey: ["trip", tripId],
-    queryFn: () => api.getPlan(parseInt(tripId!)),
+    queryFn: () => api.getPlan(tripId!),
     enabled: !!tripId,
   });
 
   // Fetch trip photos
   const { data: photos = [], isLoading: photosLoading } = useQuery({
     queryKey: ["tripPhotos", tripId],
-    queryFn: () => api.getTripPhotos(parseInt(tripId!)),
+    queryFn: () => {
+      if (!tripId) {
+        throw new Error('Invalid trip ID');
+      }
+      return api.getTripPhotos(tripId);
+    },
     enabled: !!tripId,
   });
 
@@ -46,7 +54,7 @@ export const TripDetailPage = () => {
   const addPhotoMutation = useMutation({
     mutationFn: (photoData: { local_path: string; city_name?: string }) =>
       api.addMemoryPhoto({
-        trip_id: parseInt(tripId!),
+        trip_id: tripId!,
         user_id: user!.user_id,
         local_path: photoData.local_path,
         city_name: photoData.city_name,
@@ -153,9 +161,9 @@ export const TripDetailPage = () => {
   const itinerary = parseItinerary(trip.detailed_itinerary);
 
   return (
-    <div className="min-h-screen pb-24 safe-top">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+    <div className="min-h-screen pb-24">
+      {/* Header - Sticky at top */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b safe-top">
         <div className="px-4 py-3 flex items-center gap-3">
           <Button
             variant="ghost"
@@ -293,6 +301,19 @@ export const TripDetailPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Floating Memo Button - Always show in trip detail page */}
+      {trip?.memo_items && trip.memo_items.length > 0 && (
+        <>
+          <FloatingMemoButton onClick={() => setMemoOpen(true)} />
+          <PetPackingMemo
+            isOpen={memoOpen}
+            onClose={() => setMemoOpen(false)}
+            planId={trip.plan_id.toString()}
+            memoItems={trip.memo_items}
+          />
+        </>
+      )}
     </div>
   );
 };
