@@ -71,7 +71,7 @@ export function PetPackingMemo({ isOpen, onClose, planId, memoItems: initialMemo
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-50 max-h-[80vh] flex flex-col"
+            className="fixed inset-0 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full h-full sm:h-auto sm:max-h-[80vh] sm:max-w-md bg-white sm:rounded-2xl rounded-none shadow-2xl z-50 flex flex-col"
           >
             {/* Header */}
             <div className="p-6 border-b border-gray-200">

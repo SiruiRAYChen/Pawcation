@@ -10,10 +10,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, ItineraryDay, Plan } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Calendar, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Calendar, ClipboardList, Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const PlanTab = () => {
+  const defaultMemoItems = [
+    { item: "Portable water bowl", checked: false },
+    { item: "Extra leash and ID tag", checked: false },
+    { item: "Pet waste bags", checked: false },
+    { item: "Vaccination records", checked: false },
+    { item: "Comfort blanket or toy", checked: false },
+  ];
   const [showItinerary, setShowItinerary] = useState(false);
   const [travelMode, setTravelMode] = useState<"flight" | "roadtrip">("flight");
   const [isFlipping, setIsFlipping] = useState(false);
@@ -247,7 +254,7 @@ export const PlanTab = () => {
     } catch (error) {
       console.error("Failed to parse packing memo:", error);
     }
-    return [];
+    return defaultMemoItems;
   };
 
   return (
@@ -437,11 +444,23 @@ export const PlanTab = () => {
                     {tripData?.travelMode === "roadtrip" && tripData?.isRoundTrip && " • Round Trip 🔄"}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs font-semibold text-success">
-                    {tripData?.travelMode === "roadtrip" ? "🚗 Road Trip" : "AI Generated"}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMemoOpen(true)}
+                    disabled={!selectedPlanForMemo}
+                    className="rounded-full"
+                    aria-label="Open packing memo"
+                  >
+                    <ClipboardList className="w-5 h-5" />
+                  </Button>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                    <span className="text-xs font-semibold text-success">
+                      {tripData?.travelMode === "roadtrip" ? "🚗 Road Trip" : "AI Generated"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -521,19 +540,14 @@ export const PlanTab = () => {
         </>
       )}
 
-      {/* Floating Memo Button - Itinerary detail */}
+      {/* Packing memo dialog - Itinerary detail */}
       {showItinerary && selectedPlanForMemo && (
-        <>
-          <FloatingMemoButton
-            onClick={() => setMemoOpen(true)}
-          />
-          <PetPackingMemo
-            isOpen={memoOpen}
-            onClose={() => setMemoOpen(false)}
-            planId={selectedPlanForMemo.plan_id.toString()}
-            memoItems={buildMemoItems(selectedPlanForMemo)}
-          />
-        </>
+        <PetPackingMemo
+          isOpen={memoOpen}
+          onClose={() => setMemoOpen(false)}
+          planId={selectedPlanForMemo.plan_id.toString()}
+          memoItems={buildMemoItems(selectedPlanForMemo)}
+        />
       )}
     </div>
   );

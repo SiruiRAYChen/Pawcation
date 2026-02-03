@@ -100,6 +100,21 @@ router.get('/:planId', async (req, res) => {
     }
 
     const data = planDoc.data();
+    let memoItems = data?.memoItems || [];
+    if (memoItems.length === 0 && data?.detailedItinerary) {
+      try {
+        const parsedItinerary = typeof data.detailedItinerary === 'string'
+          ? JSON.parse(data.detailedItinerary)
+          : data.detailedItinerary;
+        const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+        if (Array.isArray(packingMemo)) {
+          memoItems = packingMemo.map((item: string) => ({ item, checked: false }));
+        }
+      } catch (error) {
+        console.error('Error parsing detailed_itinerary for packing_memo:', error);
+      }
+    }
+
     return res.json({
       plan_id: planDoc.id,
       user_id: data?.userId,
@@ -116,7 +131,7 @@ router.get('/:planId', async (req, res) => {
       budget: data?.budget,
       origin: data?.origin,
       pet_ids: data?.petIds,
-      memo_items: data?.memoItems || [],
+      memo_items: memoItems,
     });
   } catch (error: any) {
     console.error('Error getting plan:', error);
@@ -135,6 +150,21 @@ router.get('/user/:userId/plans', async (req, res) => {
 
     const plans = plansSnapshot.docs.map(doc => {
       const data = doc.data();
+      let memoItems = data.memoItems || [];
+      if (memoItems.length === 0 && data?.detailedItinerary) {
+        try {
+          const parsedItinerary = typeof data.detailedItinerary === 'string'
+            ? JSON.parse(data.detailedItinerary)
+            : data.detailedItinerary;
+          const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+          if (Array.isArray(packingMemo)) {
+            memoItems = packingMemo.map((item: string) => ({ item, checked: false }));
+          }
+        } catch (error) {
+          console.error('Error parsing detailed_itinerary for packing_memo:', error);
+        }
+      }
+
       return {
         plan_id: doc.id,
         user_id: data.userId,
@@ -151,7 +181,7 @@ router.get('/user/:userId/plans', async (req, res) => {
         budget: data.budget,
         origin: data.origin,
         pet_ids: data.petIds,
-        memo_items: data.memoItems || [],
+        memo_items: memoItems,
       };
     });
 
