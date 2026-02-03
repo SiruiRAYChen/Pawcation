@@ -116,6 +116,7 @@ router.get('/:planId', async (req, res) => {
       budget: data?.budget,
       origin: data?.origin,
       pet_ids: data?.petIds,
+      memo_items: data?.memoItems || [],
     });
   } catch (error: any) {
     console.error('Error getting plan:', error);
@@ -150,6 +151,7 @@ router.get('/user/:userId/plans', async (req, res) => {
         budget: data.budget,
         origin: data.origin,
         pet_ids: data.petIds,
+        memo_items: data.memoItems || [],
       };
     });
 
@@ -322,11 +324,29 @@ router.post('/generate-road-trip-itinerary', async (req, res) => {
 // Save generated itinerary as plan
 router.post('/save', async (req, res) => {
   try {
-    const { user_id, origin, destination, start_date, end_date, pet_ids, num_adults, num_children, trip_type, is_round_trip, detailed_itinerary } = req.body;
+    const { user_id, origin, destination, start_date, end_date, pet_ids, num_adults, num_children, trip_type, is_round_trip, detailed_itinerary, memo_items } = req.body;
 
     const userDoc = await db.collection('users').doc(user_id).get();
     if (!userDoc.exists) {
       return res.status(404).json({ detail: 'User not found' });
+    }
+
+    // Parse detailed_itinerary to extract packing_memo
+    let memoItems: Array<{ item: string; checked: boolean }> = Array.isArray(memo_items) ? memo_items : [];
+    try {
+      const parsedItinerary = typeof detailed_itinerary === 'string' 
+        ? JSON.parse(detailed_itinerary) 
+        : detailed_itinerary;
+
+      const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+      if (memoItems.length === 0 && Array.isArray(packingMemo)) {
+        memoItems = packingMemo.map((item: string) => ({
+          item,
+          checked: false,
+        }));
+      }
+    } catch (error) {
+      console.error('Error parsing detailed_itinerary for packing_memo:', error);
     }
 
     const planData = {
@@ -342,6 +362,7 @@ router.post('/save', async (req, res) => {
       tripType: trip_type,
       isRoundTrip: is_round_trip || false,
       detailedItinerary: detailed_itinerary,
+      memoItems,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -363,9 +384,41 @@ router.post('/save', async (req, res) => {
       trip_type: data?.tripType,
       is_round_trip: data?.isRoundTrip,
       detailed_itinerary: data?.detailedItinerary,
+      memo_items: data?.memoItems || memoItems,
     });
   } catch (error: any) {
     console.error('Error saving plan:', error);
+    return res.status(500).json({ detail: error.message });
+  }
+});
+
+// Update memo items for a plan
+router.patch('/:planId/memo-items', async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const { memo_items } = req.body;
+
+    if (!Array.isArray(memo_items)) {
+      return res.status(400).json({ detail: 'memo_items must be an array' });
+    }
+
+    const planRef = db.collection('plans').doc(planId);
+    const planDoc = await planRef.get();
+
+    if (!planDoc.exists) {
+      return res.status(404).json({ detail: 'Plan not found' });
+    }
+
+    await planRef.update({
+      memoItems: memo_items,
+    });
+
+    return res.json({ 
+      plan_id: planId,
+      memo_items,
+    });
+  } catch (error: any) {
+    console.error('Error updating memo items:', error);
     return res.status(500).json({ detail: error.message });
   }
 });

@@ -1,9 +1,27 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const getApiBaseUrl = () => {
+  const explicitUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (explicitUrl) return explicitUrl;
+
+  const useEmulators = String(import.meta.env.VITE_USE_FIREBASE_EMULATORS) === 'true';
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined;
+
+  if (useEmulators && projectId) {
+    return `http://localhost:5001/${projectId}/us-central1/api`;
+  }
+
+  if (projectId) {
+    return `https://us-central1-${projectId}.cloudfunctions.net/api`;
+  }
+
+  return 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Types
 export interface User {
-  user_id: number;
+  user_id: string;
   email: string;
   name?: string;
   avatar_url?: string;
@@ -16,8 +34,8 @@ export interface UserUpdate {
 }
 
 export interface Pet {
-  pet_id?: number;
-  user_id: number;
+  pet_id?: string;
+  user_id: string;
   name: string;
   breed?: string;
   date_of_birth?: string; // ISO date string (YYYY-MM-DD)
@@ -36,8 +54,8 @@ export interface Pet {
 }
 
 export interface Plan {
-  plan_id?: number;
-  user_id: number;
+  plan_id?: number | string;
+  user_id: string;
   start_date: string;
   end_date: string;
   trip_type?: string;
@@ -51,6 +69,7 @@ export interface Plan {
   budget?: number;
   origin?: string;
   pet_ids?: string;
+  memo_items?: Array<{ item: string; checked: boolean }>;
 }
 
 export interface UserFull extends User {
@@ -84,6 +103,7 @@ export interface ItineraryDay {
 
 export interface ItineraryResponse {
   days: ItineraryDay[];
+  packing_memo?: string[];
   total_estimated_cost?: number;
   budget?: number;
 }
@@ -93,7 +113,7 @@ export interface ItineraryGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: number;
+  pet_id: string;
   num_adults: number;
   num_children: number;
   budget?: number;
@@ -104,7 +124,7 @@ export interface RoadTripGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: number;
+  pet_id: string;
   num_adults: number;
   num_children: number;
   is_round_trip?: boolean;
@@ -113,17 +133,17 @@ export interface RoadTripGenerateRequest {
 
 // Memory types
 export interface MemoryPhoto {
-  photo_id: number;
-  trip_id: number;
-  user_id: number;
+  photo_id: string;
+  trip_id: number | string;
+  user_id: string;
   local_path: string;
   city_name?: string;
   created_at: string;
 }
 
 export interface MemoryPhotoCreate {
-  trip_id: number;
-  user_id: number;
+  trip_id: number | string;
+  user_id: string;
   local_path: string;
   city_name?: string;
 }
@@ -136,7 +156,7 @@ export interface PastTrip extends Plan {
 
 export interface VisitedCity {
   city_name: string;
-  trip_ids: number[];
+  trip_ids: Array<string | number>;
   photo_count: number;
   trip_color: string;
 }
@@ -186,7 +206,7 @@ class PawcationAPI {
     });
   }
 
-  async getUser(userId: number): Promise<UserFull> {
+  async getUser(userId: string): Promise<UserFull> {
     return this.request<UserFull>(`/api/users/${userId}`);
   }
 
@@ -201,14 +221,14 @@ class PawcationAPI {
     });
   }
 
-  async updateUser(userId: number, updates: UserUpdate): Promise<User> {
+  async updateUser(userId: string, updates: UserUpdate): Promise<User> {
     return this.request<User>(`/api/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
-  async deleteUser(userId: number): Promise<void> {
+  async deleteUser(userId: string): Promise<void> {
     return this.request<void>(`/api/users/${userId}`, {
       method: 'DELETE',
     });
@@ -216,7 +236,7 @@ class PawcationAPI {
 
   // ========== PET ENDPOINTS ==========
 
-  async getUserPets(userId: number): Promise<Pet[]> {
+  async getUserPets(userId: string): Promise<Pet[]> {
     return this.request<Pet[]>(`/api/users/${userId}/pets`);
   }
 
@@ -270,22 +290,22 @@ class PawcationAPI {
     });
   }
 
-  async getPlan(planId: number): Promise<Plan> {
+  async getPlan(planId: number | string): Promise<Plan> {
     return this.request<Plan>(`/api/plans/${planId}`);
   }
 
-  async getUserPlans(userId: number): Promise<Plan[]> {
+  async getUserPlans(userId: string): Promise<Plan[]> {
     return this.request<Plan[]>(`/api/users/${userId}/plans`);
   }
 
-  async updatePlan(planId: number, updates: Partial<Plan>): Promise<Plan> {
+  async updatePlan(planId: number | string, updates: Partial<Plan>): Promise<Plan> {
     return this.request<Plan>(`/api/plans/${planId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
-  async deletePlan(planId: number): Promise<void> {
+  async deletePlan(planId: number | string): Promise<void> {
     return this.request<void>(`/api/plans/${planId}`, {
       method: 'DELETE',
     });
@@ -306,7 +326,7 @@ class PawcationAPI {
   }
 
   async savePlan(planData: {
-    user_id: number;
+    user_id: string;
     origin: string;
     destination: string;
     start_date: string;
@@ -317,6 +337,7 @@ class PawcationAPI {
     trip_type?: string;
     is_round_trip?: boolean;
     detailed_itinerary: string;
+    memo_items?: Array<{ item: string; checked: boolean }>;
   }): Promise<Plan> {
     return this.request<Plan>('/api/plans/save', {
       method: 'POST',
@@ -326,11 +347,11 @@ class PawcationAPI {
 
   // ========== MEMORY ENDPOINTS ==========
 
-  async getPastTrips(userId: number): Promise<PastTrip[]> {
+  async getPastTrips(userId: string): Promise<PastTrip[]> {
     return this.request<PastTrip[]>(`/api/memories/past-trips/${userId}`);
   }
 
-  async getTripPhotos(tripId: number, cityName?: string): Promise<MemoryPhoto[]> {
+  async getTripPhotos(tripId: number | string, cityName?: string): Promise<MemoryPhoto[]> {
     const params = cityName ? `?city_name=${encodeURIComponent(cityName)}` : '';
     return this.request<MemoryPhoto[]>(`/api/memories/photos/${tripId}${params}`);
   }
@@ -342,19 +363,26 @@ class PawcationAPI {
     });
   }
 
-  async deleteMemoryPhoto(photoId: number): Promise<void> {
+  async deleteMemoryPhoto(photoId: string): Promise<void> {
     return this.request<void>(`/api/memories/photos/${photoId}`, {
       method: 'DELETE',
     });
   }
 
-  async getVisitedCities(userId: number): Promise<VisitedCity[]> {
+  async getVisitedCities(userId: string): Promise<VisitedCity[]> {
     return this.request<VisitedCity[]>(`/api/memories/visited-cities/${userId}`);
   }
 
   async deletePastTrip(tripId: number): Promise<void> {
     return this.request<void>(`/api/memories/trips/${tripId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateMemoItems(planId: string, memoItems: Array<{ item: string; checked: boolean }>): Promise<{ plan_id: string; memo_items: Array<{ item: string; checked: boolean }> }> {
+    return this.request<{ plan_id: string; memo_items: Array<{ item: string; checked: boolean }> }>(`/api/plans/${planId}/memo-items`, {
+      method: 'PATCH',
+      body: JSON.stringify({ memo_items: memoItems }),
     });
   }
 }

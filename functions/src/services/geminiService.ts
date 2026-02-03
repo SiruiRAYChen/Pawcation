@@ -12,7 +12,11 @@ function getGeminiApiKey(): string {
 // Export the secret so it can be referenced in function configuration
 export { geminiApiKeySecret };
 
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+// Image analysis endpoint (fast, lightweight)
+const GEMINI_IMAGE_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+
+// Plan generation endpoint (more powerful)
+const GEMINI_PLAN_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent';
 
 interface PetInfo {
   name: string;
@@ -22,6 +26,14 @@ interface PetInfo {
   personality?: string[];
   health?: string;
 }
+
+const DEFAULT_PACKING_MEMO = [
+  'Portable water bowl',
+  'Extra leash and ID tag',
+  'Pet waste bags',
+  'Vaccination records',
+  'Comfort blanket or toy',
+];
 
 export async function analyzePetImage(imageBuffer: Buffer, mimeType: string = 'image/jpeg'): Promise<any> {
   const GEMINI_API_KEY = getGeminiApiKey();
@@ -58,7 +70,7 @@ export async function analyzePetImage(imageBuffer: Buffer, mimeType: string = 'i
 
   try {
     const response = await axios.post(
-      `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`,
+      `${GEMINI_IMAGE_ENDPOINT}?key=${GEMINI_API_KEY}`,
       payload,
       {
         headers: { 'Content-Type': 'application/json' },
@@ -145,9 +157,17 @@ CRITICAL INSTRUCTIONS:
 8. **LOCATION FORMAT REQUIREMENT: ALL city names in "subtitle" fields MUST use the format "City, State" (e.g., "Boston, Massachusetts", "Los Angeles, California"). This is critical for map functionality.**
 ${budgetInstruction}
 9. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item with a dollar amount.
+10. **PACKING MEMO**: Generate 5-8 specific items based on pet's health, personality, weather, and destination. Keep items concise. The packing_memo array MUST be non-empty.
 
 Return a JSON object with this EXACT structure:
 {
+  "packing_memo": [
+    "Calming treats (anxiety)",
+    "Paw protectors (winter)",
+    "Portable water bowl",
+    "Vaccination records",
+    "Leash and collar with ID"
+  ],
   "days": [
     {
       "date": "Sat, Feb 15",
@@ -213,7 +233,7 @@ Make sure all recommendations are realistic for ${destination} and appropriate f
 
   try {
     const response = await axios.post(
-      `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`,
+      `${GEMINI_PLAN_ENDPOINT}?key=${GEMINI_API_KEY}`,
       payload,
       {
         headers: { 'Content-Type': 'application/json' },
@@ -233,6 +253,10 @@ Make sure all recommendations are realistic for ${destination} and appropriate f
     if (start !== -1 && end !== -1) {
       const result = JSON.parse(text.substring(start, end + 1));
       
+      if (!Array.isArray(result.packing_memo) || result.packing_memo.length === 0) {
+        result.packing_memo = DEFAULT_PACKING_MEMO;
+      }
+
       // Calculate total estimated cost
       let totalCost = 0;
       if (result.days) {
@@ -327,9 +351,17 @@ CRITICAL INSTRUCTIONS FOR ROAD TRIPS:
 ${roundTripInstruction}
 ${budgetInstruction}
 11. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item (gas, tolls, hotels, meals, activities).
+12. **PACKING MEMO**: Generate 5-8 specific items for this road trip based on pet's health, personality, weather, and activities. Keep items concise. The packing_memo array MUST be non-empty.
 
 Return a JSON object with this EXACT structure:
 {
+  "packing_memo": [
+    "Car harness/carrier",
+    "Calming treats (anxiety)",
+    "Paw protectors (winter)",
+    "Portable water bowl",
+    "Leash and ID tag"
+  ],
   "days": [
     {
       "date": "Sat, Feb 15",
@@ -422,7 +454,7 @@ Return ONLY valid JSON.`;
 
   try {
     const response = await axios.post(
-      `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`,
+      `${GEMINI_PLAN_ENDPOINT}?key=${GEMINI_API_KEY}`,
       payload,
       {
         headers: { 'Content-Type': 'application/json' },
@@ -442,6 +474,10 @@ Return ONLY valid JSON.`;
     if (start !== -1 && end !== -1) {
       const result = JSON.parse(text.substring(start, end + 1));
       
+      if (!Array.isArray(result.packing_memo) || result.packing_memo.length === 0) {
+        result.packing_memo = DEFAULT_PACKING_MEMO;
+      }
+
       // Calculate total estimated cost
       let totalCost = 0;
       if (result.days) {

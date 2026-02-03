@@ -1,14 +1,16 @@
 import heroDog from "@/assets/dog-flight.png";
 import roadDog from "@/assets/dog-road-trip.png";
 import { PawIcon } from "@/components/icons/PawIcon";
+import { FloatingMemoButton } from "@/components/plan/FloatingMemoButton";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
+import { PetPackingMemo } from "@/components/plan/PetPackingMemo";
 import { TripSearchData, TripSearchForm } from "@/components/plan/TripSearchForm";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, ItineraryDay, Plan } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Calendar, Loader2, MapPin, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const PlanTab = () => {
@@ -17,12 +19,15 @@ export const PlanTab = () => {
   const [isFlipping, setIsFlipping] = useState(false);
   const [tripData, setTripData] = useState<TripSearchData | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [packingMemo, setPackingMemo] = useState<string[]>([]);
   const [totalCost, setTotalCost] = useState<number | undefined>(undefined);
   const [budget, setBudget] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlans, setSavedPlans] = useState<Plan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [memoOpen, setMemoOpen] = useState(false);
+  const [selectedPlanForMemo, setSelectedPlanForMemo] = useState<Plan | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -95,6 +100,7 @@ export const PlanTab = () => {
       }
 
       setItinerary(response.days);
+      setPackingMemo(response.packing_memo || []);
       setTotalCost(response.total_estimated_cost);
       setBudget(response.budget);
       toast({
@@ -116,6 +122,8 @@ export const PlanTab = () => {
 
   const handleBack = () => {
     setShowItinerary(false);
+    setMemoOpen(false);
+    setSelectedPlanForMemo(null);
   };
 
   const handleTravelModeToggle = (mode: "flight" | "roadtrip") => {
@@ -145,12 +153,18 @@ export const PlanTab = () => {
         destination: tripData.destination,
         start_date: tripData.startDate,
         end_date: tripData.endDate,
-        pet_ids: String(tripData.selectedPet.pet_id),
+        pet_ids: tripData.selectedPet.pet_id ? String(tripData.selectedPet.pet_id) : '',
         num_adults: tripData.adults,
         num_children: tripData.children,
         trip_type: tripData.travelMode === "roadtrip" ? "Road Trip" : "Direct Trip",
         is_round_trip: tripData.isRoundTrip ?? false,
-        detailed_itinerary: JSON.stringify({ days: itinerary }),
+        detailed_itinerary: JSON.stringify({ 
+          days: itinerary,
+          packing_memo: packingMemo,
+          total_estimated_cost: totalCost,
+          budget: budget
+        }),
+        memo_items: packingMemo.map((item) => ({ item, checked: false })),
       });
 
       setSavedPlans([...savedPlans, savedPlan]);
@@ -189,6 +203,8 @@ export const PlanTab = () => {
         budget: plan.budget || 2000,
       });
       setShowItinerary(true);
+      setSelectedPlanForMemo(plan);
+      setMemoOpen(false);
     } catch (error) {
       console.error("Failed to parse plan:", error);
       toast({
@@ -203,7 +219,36 @@ export const PlanTab = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const upcomingPlans = savedPlans.filter(plan => new Date(plan.start_date) >= today);
-  const pastPlans = savedPlans.filter(plan => new Date(plan.start_date) < today);
+  const sortedUpcomingPlans = [...upcomingPlans].sort(
+    (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+  );
+
+  // Helper: Check if trip starts within 3 days
+  const isWithinThreeDays = (startDate: string) => {
+    const start = new Date(startDate);
+    const diffTime = start.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  };
+
+  // Find trip within 3 days with memo items (for floating button visibility)
+  const upcomingTripWithinThreeDays = sortedUpcomingPlans.find(
+    plan => isWithinThreeDays(plan.start_date)
+  );
+
+  const buildMemoItems = (plan?: Plan | null) => {
+    if (!plan) return [];
+    if (plan.memo_items && plan.memo_items.length > 0) return plan.memo_items;
+    try {
+      const parsed = JSON.parse(plan.detailed_itinerary || "{}");
+      if (Array.isArray(parsed?.packing_memo)) {
+        return parsed.packing_memo.map((item: string) => ({ item, checked: false }));
+      }
+    } catch (error) {
+      console.error("Failed to parse packing memo:", error);
+    }
+    return [];
+  };
 
   return (
     <div className="min-h-screen pb-24">
@@ -349,36 +394,6 @@ export const PlanTab = () => {
                 </div>
               )}
 
-              {/* Past Trips */}
-              {pastPlans.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-bold text-foreground mb-3">Past Trips</h2>
-                  <div className="space-y-3">
-                    {pastPlans.map((plan) => (
-                      <motion.div
-                        key={plan.plan_id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-card rounded-xl p-4 border border-border shadow-paw cursor-pointer hover:shadow-paw-lg transition-shadow opacity-75"
-                        onClick={() => handleViewPlan(plan)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                            <MapPin className="w-6 h-6 text-accent" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold">{plan.destination}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(plan.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(plan.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Empty State */}
               {!isLoadingPlans && savedPlans.length === 0 && (
                 <div className="text-center py-8">
@@ -411,7 +426,14 @@ export const PlanTab = () => {
                     {tripData?.destination || "Your"} Trip
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    {itinerary.length} days • {tripData?.selectedPet?.name || "Your pet"}
+                    {(() => {
+                      if (itinerary.length > 0) return itinerary.length;
+                      if (tripData?.startDate && tripData?.endDate) {
+                        const days = Math.ceil((new Date(tripData.endDate).getTime() - new Date(tripData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                        return days;
+                      }
+                      return 0;
+                    })()} days • {tripData?.selectedPet?.name || "Your pet"}
                     {tripData?.travelMode === "roadtrip" && tripData?.isRoundTrip && " • Round Trip 🔄"}
                   </p>
                 </div>
@@ -475,6 +497,44 @@ export const PlanTab = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Memo Button - Plan list */}
+      {!showItinerary && upcomingTripWithinThreeDays && (
+        <>
+          <FloatingMemoButton 
+            onClick={() => {
+              setSelectedPlanForMemo(upcomingTripWithinThreeDays);
+              setMemoOpen(true);
+            }} 
+          />
+          {selectedPlanForMemo && (
+            <PetPackingMemo
+              isOpen={memoOpen}
+              onClose={() => {
+                setMemoOpen(false);
+                setSelectedPlanForMemo(null);
+              }}
+              planId={selectedPlanForMemo.plan_id.toString()}
+              memoItems={buildMemoItems(selectedPlanForMemo)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Floating Memo Button - Itinerary detail */}
+      {showItinerary && selectedPlanForMemo && (
+        <>
+          <FloatingMemoButton
+            onClick={() => setMemoOpen(true)}
+          />
+          <PetPackingMemo
+            isOpen={memoOpen}
+            onClose={() => setMemoOpen(false)}
+            planId={selectedPlanForMemo.plan_id.toString()}
+            memoItems={buildMemoItems(selectedPlanForMemo)}
+          />
+        </>
+      )}
     </div>
   );
 };
