@@ -5,12 +5,22 @@ import { FloatingMemoButton } from "@/components/plan/FloatingMemoButton";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
 import { PetPackingMemo } from "@/components/plan/PetPackingMemo";
 import { TripSearchData, TripSearchForm } from "@/components/plan/TripSearchForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, ItineraryDay, Plan } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Calendar, ClipboardList, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Calendar, ClipboardList, Loader2, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const PlanTab = () => {
@@ -35,6 +45,9 @@ export const PlanTab = () => {
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [memoOpen, setMemoOpen] = useState(false);
   const [selectedPlanForMemo, setSelectedPlanForMemo] = useState<Plan | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+  const [swipedPlanId, setSwipedPlanId] = useState<string | number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -57,10 +70,10 @@ export const PlanTab = () => {
   }, [user]);
 
   const handleSearch = async (data: TripSearchData) => {
-    if (!data.selectedPet) {
+    if (!data.selectedPets || data.selectedPets.length === 0) {
       toast({
         title: "No pet selected",
-        description: "Please select a pet to travel with",
+        description: "Please select at least one pet to travel with",
         variant: "destructive",
       });
       return;
@@ -87,7 +100,7 @@ export const PlanTab = () => {
           destination: data.destination,
           start_date: data.startDate,
           end_date: data.endDate,
-          pet_id: data.selectedPet.pet_id!,
+          pet_ids: data.selectedPets.map((pet) => pet.pet_id!),
           num_adults: data.adults,
           num_children: data.children,
           is_round_trip: data.isRoundTrip ?? false,
@@ -99,7 +112,7 @@ export const PlanTab = () => {
           destination: data.destination,
           start_date: data.startDate,
           end_date: data.endDate,
-          pet_id: data.selectedPet.pet_id!,
+          pet_ids: data.selectedPets.map((pet) => pet.pet_id!),
           num_adults: data.adults,
           num_children: data.children,
           budget: data.budget,
@@ -143,7 +156,7 @@ export const PlanTab = () => {
   };
 
   const handleSavePlan = async () => {
-    if (!user?.user_id || !tripData?.selectedPet || itinerary.length === 0) {
+    if (!user?.user_id || !tripData?.selectedPets?.length || itinerary.length === 0) {
       toast({
         title: "Cannot save",
         description: "Missing required information",
@@ -160,7 +173,7 @@ export const PlanTab = () => {
         destination: tripData.destination,
         start_date: tripData.startDate,
         end_date: tripData.endDate,
-        pet_ids: tripData.selectedPet.pet_id ? String(tripData.selectedPet.pet_id) : '',
+        pet_ids: tripData.selectedPets.map((pet) => String(pet.pet_id)).join(','),
         num_adults: tripData.adults,
         num_children: tripData.children,
         trip_type: tripData.travelMode === "roadtrip" ? "Road Trip" : "Direct Trip",
@@ -191,6 +204,35 @@ export const PlanTab = () => {
     }
   };
 
+  const handleDeleteClick = (plan: Plan) => {
+    setPlanToDelete(plan);
+    setDeleteDialogOpen(true);
+    setSwipedPlanId(plan.plan_id ?? null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!planToDelete?.plan_id) return;
+    try {
+      await api.deletePlan(planToDelete.plan_id);
+      setSavedPlans((prev) => prev.filter((plan) => plan.plan_id !== planToDelete.plan_id));
+      toast({
+        title: "Trip deleted",
+        description: "The trip has been removed from your plans.",
+      });
+    } catch (error) {
+      console.error("Failed to delete plan:", error);
+      toast({
+        title: "Delete failed",
+        description: "Unable to delete this trip right now.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+      setSwipedPlanId(null);
+    }
+  };
+
   const handleViewPlan = (plan: Plan) => {
     try {
       const parsedItinerary = JSON.parse(plan.detailed_itinerary || "{}");
@@ -202,7 +244,7 @@ export const PlanTab = () => {
         destination: plan.destination || "",
         startDate: plan.start_date,
         endDate: plan.end_date,
-        selectedPet: null,
+        selectedPets: [],
         adults: plan.num_adults,
         children: plan.num_children,
         travelMode: plan.trip_type === "Road Trip" ? "roadtrip" : "flight",
@@ -268,8 +310,23 @@ export const PlanTab = () => {
             exit={{ opacity: 0 }}
             className="gradient-hero min-h-screen"
           >
+            {/* Header */}
+            <div className="px-4 pt-12 pb-2 safe-top">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 mb-2"
+              >
+                <PawIcon className="w-6 h-6 text-primary" />
+                <h1 className="text-2xl font-extrabold text-foreground">Plan</h1>
+              </motion.div>
+              <p className="text-muted-foreground">
+                Create your next pet-friendly adventure
+              </p>
+            </div>
+
             {/* Hero Section */}
-            <div className="relative pt-12 px-4 pb-6 safe-top">
+            <div className="relative px-4 pb-6">
               <div className="text-center space-y-2">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -381,20 +438,41 @@ export const PlanTab = () => {
                         key={plan.plan_id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-card rounded-xl p-4 border border-border shadow-paw cursor-pointer hover:shadow-paw-lg transition-shadow"
-                        onClick={() => handleViewPlan(plan)}
+                        className="relative"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Calendar className="w-6 h-6 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold">{plan.destination}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(plan.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(plan.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
+                        {/* Delete background */}
+                        <div className="absolute inset-0 flex items-center justify-end pr-4 bg-destructive rounded-xl">
+                          <Trash2 className="w-5 h-5 text-destructive-foreground" />
                         </div>
+
+                        <motion.div
+                          drag="x"
+                          dragConstraints={{ left: -80, right: 0 }}
+                          dragElastic={0.1}
+                          dragMomentum={false}
+                          onDragEnd={(e, info) => {
+                            if (info.offset.x < -40) {
+                              handleDeleteClick(plan);
+                            } else {
+                              setSwipedPlanId(null);
+                            }
+                          }}
+                          animate={{ x: swipedPlanId === plan.plan_id ? -80 : 0 }}
+                          className="relative bg-card rounded-xl p-4 border border-border shadow-paw cursor-pointer hover:shadow-paw-lg transition-shadow"
+                          onClick={() => handleViewPlan(plan)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Calendar className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold">{plan.destination}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(plan.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(plan.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
                       </motion.div>
                     ))}
                   </div>
@@ -440,7 +518,7 @@ export const PlanTab = () => {
                         return days;
                       }
                       return 0;
-                    })()} days • {tripData?.selectedPet?.name || "Your pet"}
+                    })()} days • {tripData?.selectedPets?.map((pet) => pet.name).filter(Boolean).join(", ") || "Your pets"}
                     {tripData?.travelMode === "roadtrip" && tripData?.isRoundTrip && " • Round Trip 🔄"}
                   </p>
                 </div>
@@ -476,8 +554,8 @@ export const PlanTab = () => {
                 </h2>
                 <p className="text-sm text-muted-foreground text-center max-w-md">
                   {tripData?.travelMode === "roadtrip"
-                    ? `Our AI is finding the best routes, rest stops, and pet-friendly places along the way for ${tripData?.selectedPet?.name}`
-                    : `Our AI is analyzing pet-friendly accommodations, activities, and travel options for ${tripData?.selectedPet?.name}`}
+                    ? `Our AI is finding the best routes, rest stops, and pet-friendly places along the way for ${tripData?.selectedPets?.map((pet) => pet.name).filter(Boolean).join(", ") || "your pets"}`
+                    : `Our AI is analyzing pet-friendly accommodations, activities, and travel options for ${tripData?.selectedPets?.map((pet) => pet.name).filter(Boolean).join(", ") || "your pets"}`}
                 </p>
               </div>
             ) : (
@@ -549,6 +627,36 @@ export const PlanTab = () => {
           memoItems={buildMemoItems(selectedPlanForMemo)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setSwipedPlanId(null);
+            setPlanToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this trip. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

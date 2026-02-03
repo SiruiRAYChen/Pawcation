@@ -19,7 +19,7 @@ export interface TripSearchData {
   destination: string;
   startDate: string;
   endDate: string;
-  selectedPet: Pet | null;
+  selectedPets: Pet[];
   adults: number;
   children: number;
   isRoundTrip?: boolean;
@@ -30,14 +30,14 @@ export interface TripSearchData {
 export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFormProps) => {
   const { user } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+  const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [isLoadingPets, setIsLoadingPets] = useState(true);
   const [formData, setFormData] = useState<TripSearchData>({
     origin: "",
     destination: "",
     startDate: "",
     endDate: "",
-    selectedPet: null,
+    selectedPets: [],
     adults: 2,
     children: 0,
     isRoundTrip: true,
@@ -59,8 +59,8 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
         const userPets = await api.getUserPets(user.user_id);
         setPets(userPets);
         if (userPets.length > 0) {
-          setSelectedPet(userPets[0]);
-          setFormData(prev => ({ ...prev, selectedPet: userPets[0] }));
+          setSelectedPets([userPets[0]]);
+          setFormData(prev => ({ ...prev, selectedPets: [userPets[0]] }));
         }
       } catch (error) {
         console.error("Failed to load pets:", error);
@@ -91,37 +91,55 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
         ) : pets.length === 0 ? (
           <p className="text-sm text-muted-foreground">No pets added yet</p>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {pets.map((pet) => (
-              <button
-                key={pet.pet_id}
-                type="button"
-                onClick={() => {
-                  setSelectedPet(pet);
-                  setFormData({ ...formData, selectedPet: pet });
-                }}
-                className={`flex items-center gap-2 p-2 rounded-lg border-2 transition-all ${
-                  selectedPet?.pet_id === pet.pet_id
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                {pet.avatar_url ? (
-                  <img
-                    src={pet.avatar_url}
-                    alt={pet.name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <PawIcon className="w-5 h-5 text-primary" />
-                  </div>
-                )}
-                <span className="text-sm font-medium truncate flex-1 text-left">
-                  {pet.name || pet.breed || "Unnamed Pet"}
-                </span>
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Tap to select pets (at least one required)</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {pets.map((pet) => {
+                const isSelected = selectedPets.some((selected) => selected.pet_id === pet.pet_id);
+                return (
+                  <button
+                    key={pet.pet_id}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        if (selectedPets.length === 1) return;
+                        const next = selectedPets.filter((selected) => selected.pet_id !== pet.pet_id);
+                        setSelectedPets(next);
+                        setFormData({ ...formData, selectedPets: next });
+                      } else {
+                        const next = [...selectedPets, pet];
+                        setSelectedPets(next);
+                        setFormData({ ...formData, selectedPets: next });
+                      }
+                    }}
+                    className={`min-w-[160px] flex items-center gap-2 p-2 rounded-lg border-2 transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {pet.avatar_url ? (
+                      <img
+                        src={pet.avatar_url}
+                        alt={pet.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <PawIcon className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium truncate">
+                        {pet.name || "Unnamed Pet"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

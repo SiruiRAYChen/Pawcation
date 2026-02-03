@@ -113,7 +113,7 @@ export interface ItineraryGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: string;
+  pet_ids: string[];
   num_adults: number;
   num_children: number;
   budget?: number;
@@ -124,7 +124,7 @@ export interface RoadTripGenerateRequest {
   destination: string;
   start_date: string;
   end_date: string;
-  pet_id: string;
+  pet_ids: string[];
   num_adults: number;
   num_children: number;
   is_round_trip?: boolean;

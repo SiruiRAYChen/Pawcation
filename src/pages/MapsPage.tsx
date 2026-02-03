@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ItineraryResponse, MemoryPhoto, PastTrip } from "@/lib/api";
-import { GoogleMap, InfoWindowF, MarkerF, PolylineF, useLoadScript } from "@react-google-maps/api";
+import { uploadMemoryPhoto } from "@/lib/storage";
+import { GoogleMap, InfoWindowF, PolylineF, useLoadScript } from "@react-google-maps/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Plus, Trash2, Upload } from "lucide-react";
@@ -21,6 +22,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
+const USE_DIRECTIONS = String(import.meta.env.VITE_GOOGLE_MAPS_USE_DIRECTIONS) === "true";
+const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined;
 
 interface RouteStop {
   cityName: string;
@@ -55,11 +59,12 @@ export const MapsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [tripPhotosByTrip, setTripPhotosByTrip] = useState<Map<string, MemoryPhoto[]>>(new Map());
+  const markersRef = useRef<Array<google.maps.marker.AdvancedMarkerElement | google.maps.Marker>>([]);
   const geocodeCacheRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // Fetch visited cities
@@ -202,6 +207,12 @@ export const MapsPage = () => {
     [pastTrips, visitedCities]
   );
 
+  const stopKey = useMemo(
+    () => allStops.map((stop) => `${stop.tripId}:${stop.cityName}`).join("|")
+      || String(pastTrips.length),
+    [allStops, pastTrips.length]
+  );
+
   const tripColorMap = useMemo(() => {
     const map = new Map<string, string>();
     visitedCities.forEach((city) => {
@@ -275,12 +286,24 @@ export const MapsPage = () => {
           console.error(`Failed to geocode ${stop.cityName}`, error);
         }
       }
-      setMarkerLocations(locations);
+
+      setMarkerLocations((prev) => {
+        if (prev.length === locations.length &&
+            prev.every((item, idx) =>
+              item.stop.cityName === locations[idx].stop.cityName &&
+              String(item.stop.tripId) === String(locations[idx].stop.tripId) &&
+              item.position.lat === locations[idx].position.lat &&
+              item.position.lng === locations[idx].position.lng
+            )) {
+          return prev;
+        }
+        return locations;
+      });
       setIsGeocoding(false);
     };
 
     geocodeStops();
-  }, [allStops, isLoaded]);
+  }, [stopKey, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded || markerLocations.length < 2) {
@@ -288,13 +311,34 @@ export const MapsPage = () => {
       return;
     }
 
-    const loadDirections = async () => {
-      const grouped = markerLocations.reduce<Record<string, MarkerLocation[]>>((acc, loc) => {
-        const key = String(loc.stop.tripId);
-        acc[key] = acc[key] ? [...acc[key], loc] : [loc];
-        return acc;
-      }, {});
+    const grouped = markerLocations.reduce<Record<string, MarkerLocation[]>>((acc, loc) => {
+      const key = String(loc.stop.tripId);
+      acc[key] = acc[key] ? [...acc[key], loc] : [loc];
+      return acc;
+    }, {});
 
+    const buildStraightLines = () => {
+      const segments: RoutePathSegment[] = [];
+      for (const [tripId, locations] of Object.entries(grouped)) {
+        if (locations.some((loc) => isDirectTrip(loc.stop.tripType))) {
+          continue;
+        }
+        if (locations.length < 2) continue;
+        segments.push({
+          tripId,
+          color: getTripColor(tripId),
+          path: locations.map((loc) => loc.position),
+        });
+      }
+      setRoutePaths(segments);
+    };
+
+    if (!USE_DIRECTIONS) {
+      buildStraightLines();
+      return;
+    }
+
+    const loadDirections = async () => {
       const segments: RoutePathSegment[] = [];
 
       for (const [tripId, locations] of Object.entries(grouped)) {
@@ -369,6 +413,52 @@ export const MapsPage = () => {
     mapInstance.fitBounds(bounds, { top: 80, right: 60, bottom: 200, left: 60 });
   }, [mapInstance, markerLocations]);
 
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    markersRef.current.forEach((marker) => {
+      if (marker instanceof google.maps.Marker) {
+        marker.setMap(null);
+      } else {
+        marker.map = null;
+      }
+    });
+    markersRef.current = [];
+
+    markerLocations.forEach((location) => {
+      if (GOOGLE_MAPS_MAP_ID && google.maps.marker?.AdvancedMarkerElement && google.maps.marker?.PinElement) {
+        const pin = new google.maps.marker.PinElement({
+          background: getTripColor(location.stop.tripId),
+          borderColor: "#ffffff",
+          glyphColor: "#111827",
+        });
+        const marker = new google.maps.marker.AdvancedMarkerElement({
+          map: mapInstance,
+          position: location.position,
+          content: pin.element,
+        });
+        marker.addListener("gmp-click", () => handlePinClick(location.stop));
+        markersRef.current.push(marker);
+      } else {
+        const marker = new google.maps.Marker({
+          map: mapInstance,
+          position: location.position,
+          icon: {
+            path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
+            scale: 1.5,
+            fillOpacity: 1,
+            fillColor: getTripColor(location.stop.tripId),
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+            anchor: new google.maps.Point(12, 22),
+          },
+        });
+        marker.addListener("click", () => handlePinClick(location.stop));
+        markersRef.current.push(marker);
+      }
+    });
+  }, [mapInstance, markerLocations, tripColorMap]);
+
   const refreshTripPhotos = async (tripId?: string | number | null) => {
     if (!tripId) return;
     try {
@@ -421,12 +511,21 @@ export const MapsPage = () => {
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.user_id || !sheetStop?.tripId) return;
 
-    const localPath = URL.createObjectURL(file);
-    addPhotoMutation.mutate({ local_path: localPath });
+    try {
+      const downloadUrl = await uploadMemoryPhoto({
+        file,
+        userId: user.user_id,
+        tripId: sheetStop.tripId,
+      });
+      addPhotoMutation.mutate({ local_path: downloadUrl });
+    } catch (error) {
+      console.error("Failed to upload memory photo:", error);
+      toast.error("Failed to upload photo");
+    }
   };
 
   const handleDeletePhoto = (photoId: string) => {
@@ -525,6 +624,7 @@ export const MapsPage = () => {
               streetViewControl: false,
               clickableIcons: false,
               minZoom: 3,
+              ...(GOOGLE_MAPS_MAP_ID ? { mapId: GOOGLE_MAPS_MAP_ID } : {}),
             }}
           >
             {routePaths.map((segment) => (
@@ -535,28 +635,6 @@ export const MapsPage = () => {
                   strokeColor: segment.color,
                   strokeOpacity: 0.8,
                   strokeWeight: 4,
-                }}
-              />
-            ))}
-            {markerLocations.map((location, index) => (
-              <MarkerF
-                key={`${location.stop.tripId}-${location.stop.cityName}-${index}`}
-                position={location.position}
-                onClick={() => handlePinClick(location.stop)}
-                icon={{
-                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-                  scale: 1.5,
-                  fillOpacity: 1,
-                  fillColor: getTripColor(location.stop.tripId),
-                  strokeColor: "#ffffff",
-                  strokeWeight: 2,
-                  anchor: new google.maps.Point(12, 22),
-                }}
-                label={{
-                  text: String(index + 1),
-                  color: "#111827",
-                  fontSize: "12px",
-                  fontWeight: "600",
                 }}
               />
             ))}
@@ -579,6 +657,26 @@ export const MapsPage = () => {
                   <div className="space-y-1">
                     <div className="font-semibold text-sm text-foreground">{selectedStop.cityName}</div>
                     <div className="text-xs text-muted-foreground">{formatCheckIn(selectedStop)}</div>
+                    {getPetsForTrip(selectedStop.tripId).length > 0 && (
+                      <div className="flex items-center gap-1 pt-1">
+                        {getPetsForTrip(selectedStop.tripId).slice(0, 3).map((pet) => (
+                          <Avatar key={pet.pet_id} className="w-6 h-6 border border-background">
+                            {pet.avatar_url ? (
+                              <AvatarImage src={pet.avatar_url} alt={pet.name} />
+                            ) : (
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                                {pet.name.substring(0, 1).toUpperCase()}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                        ))}
+                        {getPetsForTrip(selectedStop.tripId).length > 3 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            +{getPetsForTrip(selectedStop.tripId).length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
