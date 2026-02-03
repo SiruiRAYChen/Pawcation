@@ -85,6 +85,7 @@ export interface ItineraryDay {
 
 export interface ItineraryResponse {
   days: ItineraryDay[];
+  packing_memo?: string[];
   total_estimated_cost?: number;
   budget?: number;
 }

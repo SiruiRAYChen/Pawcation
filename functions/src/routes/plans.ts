@@ -331,13 +331,21 @@ router.post('/save', async (req, res) => {
       return res.status(404).json({ detail: 'User not found' });
     }
 
-    // Initialize memo items from packing_memo if available
+    // Parse detailed_itinerary to extract packing_memo
     let memoItems: Array<{ item: string; checked: boolean }> = [];
-    if (detailed_itinerary?.packing_memo && Array.isArray(detailed_itinerary.packing_memo)) {
-      memoItems = detailed_itinerary.packing_memo.map((item: string) => ({
-        item,
-        checked: false,
-      }));
+    try {
+      const parsedItinerary = typeof detailed_itinerary === 'string' 
+        ? JSON.parse(detailed_itinerary) 
+        : detailed_itinerary;
+      
+      if (parsedItinerary?.packing_memo && Array.isArray(parsedItinerary.packing_memo)) {
+        memoItems = parsedItinerary.packing_memo.map((item: string) => ({
+          item,
+          checked: false,
+        }));
+      }
+    } catch (error) {
+      console.error('Error parsing detailed_itinerary for packing_memo:', error);
     }
 
     const planData = {

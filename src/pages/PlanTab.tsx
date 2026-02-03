@@ -19,6 +19,7 @@ export const PlanTab = () => {
   const [isFlipping, setIsFlipping] = useState(false);
   const [tripData, setTripData] = useState<TripSearchData | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+  const [packingMemo, setPackingMemo] = useState<string[]>([]);
   const [totalCost, setTotalCost] = useState<number | undefined>(undefined);
   const [budget, setBudget] = useState<number | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -99,6 +100,7 @@ export const PlanTab = () => {
       }
 
       setItinerary(response.days);
+      setPackingMemo(response.packing_memo || []);
       setTotalCost(response.total_estimated_cost);
       setBudget(response.budget);
       toast({
@@ -154,7 +156,12 @@ export const PlanTab = () => {
         num_children: tripData.children,
         trip_type: tripData.travelMode === "roadtrip" ? "Road Trip" : "Direct Trip",
         is_round_trip: tripData.isRoundTrip ?? false,
-        detailed_itinerary: JSON.stringify({ days: itinerary }),
+        detailed_itinerary: JSON.stringify({ 
+          days: itinerary,
+          packing_memo: packingMemo,
+          total_estimated_cost: totalCost,
+          budget: budget
+        }),
       });
 
       setSavedPlans([...savedPlans, savedPlan]);
