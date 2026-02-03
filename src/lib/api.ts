@@ -1,5 +1,23 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const getApiBaseUrl = () => {
+  const explicitUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (explicitUrl) return explicitUrl;
+
+  const useEmulators = String(import.meta.env.VITE_USE_FIREBASE_EMULATORS) === 'true';
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined;
+
+  if (useEmulators && projectId) {
+    return `http://localhost:5001/${projectId}/us-central1/api`;
+  }
+
+  if (projectId) {
+    return `https://us-central1-${projectId}.cloudfunctions.net/api`;
+  }
+
+  return 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Types
 export interface User {
@@ -319,6 +337,7 @@ class PawcationAPI {
     trip_type?: string;
     is_round_trip?: boolean;
     detailed_itinerary: string;
+    memo_items?: Array<{ item: string; checked: boolean }>;
   }): Promise<Plan> {
     return this.request<Plan>('/api/plans/save', {
       method: 'POST',

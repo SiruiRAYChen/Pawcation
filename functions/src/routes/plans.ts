@@ -324,7 +324,7 @@ router.post('/generate-road-trip-itinerary', async (req, res) => {
 // Save generated itinerary as plan
 router.post('/save', async (req, res) => {
   try {
-    const { user_id, origin, destination, start_date, end_date, pet_ids, num_adults, num_children, trip_type, is_round_trip, detailed_itinerary } = req.body;
+    const { user_id, origin, destination, start_date, end_date, pet_ids, num_adults, num_children, trip_type, is_round_trip, detailed_itinerary, memo_items } = req.body;
 
     const userDoc = await db.collection('users').doc(user_id).get();
     if (!userDoc.exists) {
@@ -332,14 +332,15 @@ router.post('/save', async (req, res) => {
     }
 
     // Parse detailed_itinerary to extract packing_memo
-    let memoItems: Array<{ item: string; checked: boolean }> = [];
+    let memoItems: Array<{ item: string; checked: boolean }> = Array.isArray(memo_items) ? memo_items : [];
     try {
       const parsedItinerary = typeof detailed_itinerary === 'string' 
         ? JSON.parse(detailed_itinerary) 
         : detailed_itinerary;
-      
-      if (parsedItinerary?.packing_memo && Array.isArray(parsedItinerary.packing_memo)) {
-        memoItems = parsedItinerary.packing_memo.map((item: string) => ({
+
+      const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+      if (memoItems.length === 0 && Array.isArray(packingMemo)) {
+        memoItems = packingMemo.map((item: string) => ({
           item,
           checked: false,
         }));
@@ -383,6 +384,7 @@ router.post('/save', async (req, res) => {
       trip_type: data?.tripType,
       is_round_trip: data?.isRoundTrip,
       detailed_itinerary: data?.detailedItinerary,
+      memo_items: data?.memoItems || memoItems,
     });
   } catch (error: any) {
     console.error('Error saving plan:', error);

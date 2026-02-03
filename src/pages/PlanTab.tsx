@@ -122,6 +122,8 @@ export const PlanTab = () => {
 
   const handleBack = () => {
     setShowItinerary(false);
+    setMemoOpen(false);
+    setSelectedPlanForMemo(null);
   };
 
   const handleTravelModeToggle = (mode: "flight" | "roadtrip") => {
@@ -162,6 +164,7 @@ export const PlanTab = () => {
           total_estimated_cost: totalCost,
           budget: budget
         }),
+        memo_items: packingMemo.map((item) => ({ item, checked: false })),
       });
 
       setSavedPlans([...savedPlans, savedPlan]);
@@ -200,6 +203,8 @@ export const PlanTab = () => {
         budget: plan.budget || 2000,
       });
       setShowItinerary(true);
+      setSelectedPlanForMemo(plan);
+      setMemoOpen(false);
     } catch (error) {
       console.error("Failed to parse plan:", error);
       toast({
@@ -214,6 +219,9 @@ export const PlanTab = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const upcomingPlans = savedPlans.filter(plan => new Date(plan.start_date) >= today);
+  const sortedUpcomingPlans = [...upcomingPlans].sort(
+    (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+  );
 
   // Helper: Check if trip starts within 3 days
   const isWithinThreeDays = (startDate: string) => {
@@ -224,9 +232,23 @@ export const PlanTab = () => {
   };
 
   // Find trip within 3 days with memo items (for floating button visibility)
-  const upcomingTripWithMemo = upcomingPlans.find(
-    plan => isWithinThreeDays(plan.start_date) && plan.memo_items && plan.memo_items.length > 0
+  const upcomingTripWithinThreeDays = sortedUpcomingPlans.find(
+    plan => isWithinThreeDays(plan.start_date)
   );
+
+  const buildMemoItems = (plan?: Plan | null) => {
+    if (!plan) return [];
+    if (plan.memo_items && plan.memo_items.length > 0) return plan.memo_items;
+    try {
+      const parsed = JSON.parse(plan.detailed_itinerary || "{}");
+      if (Array.isArray(parsed?.packing_memo)) {
+        return parsed.packing_memo.map((item: string) => ({ item, checked: false }));
+      }
+    } catch (error) {
+      console.error("Failed to parse packing memo:", error);
+    }
+    return [];
+  };
 
   return (
     <div className="min-h-screen pb-24">
@@ -476,12 +498,12 @@ export const PlanTab = () => {
         )}
       </AnimatePresence>
 
-      {/* Floating Memo Button - Show only for trips starting within 3 days */}
-      {!showItinerary && upcomingTripWithMemo && (
+      {/* Floating Memo Button - Plan list */}
+      {!showItinerary && upcomingTripWithinThreeDays && (
         <>
           <FloatingMemoButton 
             onClick={() => {
-              setSelectedPlanForMemo(upcomingTripWithMemo);
+              setSelectedPlanForMemo(upcomingTripWithinThreeDays);
               setMemoOpen(true);
             }} 
           />
@@ -493,9 +515,24 @@ export const PlanTab = () => {
                 setSelectedPlanForMemo(null);
               }}
               planId={selectedPlanForMemo.plan_id.toString()}
-              memoItems={selectedPlanForMemo.memo_items || []}
+              memoItems={buildMemoItems(selectedPlanForMemo)}
             />
           )}
+        </>
+      )}
+
+      {/* Floating Memo Button - Itinerary detail */}
+      {showItinerary && selectedPlanForMemo && (
+        <>
+          <FloatingMemoButton
+            onClick={() => setMemoOpen(true)}
+          />
+          <PetPackingMemo
+            isOpen={memoOpen}
+            onClose={() => setMemoOpen(false)}
+            planId={selectedPlanForMemo.plan_id.toString()}
+            memoItems={buildMemoItems(selectedPlanForMemo)}
+          />
         </>
       )}
     </div>
