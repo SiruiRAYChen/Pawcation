@@ -115,7 +115,7 @@ export interface RoadTripGenerateRequest {
 
 // Memory types
 export interface MemoryPhoto {
-  photo_id: number;
+  photo_id: string;
   trip_id: number | string;
   user_id: string;
   local_path: string;
@@ -138,7 +138,7 @@ export interface PastTrip extends Plan {
 
 export interface VisitedCity {
   city_name: string;
-  trip_ids: number[];
+  trip_ids: Array<string | number>;
   photo_count: number;
   trip_color: string;
 }
@@ -188,7 +188,7 @@ class PawcationAPI {
     });
   }
 
-  async getUser(userId: number): Promise<UserFull> {
+  async getUser(userId: string): Promise<UserFull> {
     return this.request<UserFull>(`/api/users/${userId}`);
   }
 
@@ -203,14 +203,14 @@ class PawcationAPI {
     });
   }
 
-  async updateUser(userId: number, updates: UserUpdate): Promise<User> {
+  async updateUser(userId: string, updates: UserUpdate): Promise<User> {
     return this.request<User>(`/api/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
-  async deleteUser(userId: number): Promise<void> {
+  async deleteUser(userId: string): Promise<void> {
     return this.request<void>(`/api/users/${userId}`, {
       method: 'DELETE',
     });
@@ -218,7 +218,7 @@ class PawcationAPI {
 
   // ========== PET ENDPOINTS ==========
 
-  async getUserPets(userId: number): Promise<Pet[]> {
+  async getUserPets(userId: string): Promise<Pet[]> {
     return this.request<Pet[]>(`/api/users/${userId}/pets`);
   }
 
@@ -344,13 +344,13 @@ class PawcationAPI {
     });
   }
 
-  async deleteMemoryPhoto(photoId: number): Promise<void> {
+  async deleteMemoryPhoto(photoId: string): Promise<void> {
     return this.request<void>(`/api/memories/photos/${photoId}`, {
       method: 'DELETE',
     });
   }
 
-  async getVisitedCities(userId: number): Promise<VisitedCity[]> {
+  async getVisitedCities(userId: string): Promise<VisitedCity[]> {
     return this.request<VisitedCity[]>(`/api/memories/visited-cities/${userId}`);
   }
 

@@ -28,7 +28,7 @@ export const TripDetailPage = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [memoOpen, setMemoOpen] = useState(false);
 
   // Fetch trip details
@@ -71,7 +71,7 @@ export const TripDetailPage = () => {
 
   // Delete photo mutation
   const deletePhotoMutation = useMutation({
-    mutationFn: (photoId: number) => api.deleteMemoryPhoto(photoId),
+    mutationFn: (photoId: string) => api.deleteMemoryPhoto(photoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tripPhotos", tripId] });
       queryClient.invalidateQueries({ queryKey: ["pastTrips"] });
@@ -113,7 +113,7 @@ export const TripDetailPage = () => {
     });
   };
 
-  const handleDeletePhoto = (photoId: number) => {
+  const handleDeletePhoto = (photoId: string) => {
     setPhotoToDelete(photoId);
     setDeleteDialogOpen(true);
   };
