@@ -43,7 +43,7 @@ export const HotelsPage = () => {
       } else {
         // Geocode the city to get coordinates
         const geocodeResponse = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&region=us&key=${apiKey}`
         );
         const geocodeData = await geocodeResponse.json();
         
@@ -70,7 +70,7 @@ export const HotelsPage = () => {
             "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos,places.rating"
           },
           body: JSON.stringify({
-            textQuery: location ? "pet friendly hotel" : `pet friendly hotels in ${searchQuery}`,
+            textQuery: "pet friendly hotel",
             locationBias: {
               circle: {
                 center: {
@@ -173,18 +173,17 @@ export const HotelsPage = () => {
             >
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
-            <Search className="absolute left-11 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pl-20"
+              className="pl-12"
             />
           </div>
           <Button
-            onClick={searchHotels}
+            onClick={() => searchHotels()}
             disabled={isLoading || isGettingLocation}
             className="px-6"
           >
@@ -222,19 +221,9 @@ export const HotelsPage = () => {
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-base text-foreground line-clamp-1">
-                      {hotel.name}
-                    </h3>
-                    {hotel.rating && (
-                      <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary">
-                          {hotel.rating.toFixed(1)}
-                        </span>
-                        <span className="text-xs text-primary">★</span>
-                      </div>
-                    )}
-                  </div>
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                    {hotel.name}
+                  </h3>
                   {hotel.address && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {hotel.address}

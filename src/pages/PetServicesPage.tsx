@@ -15,6 +15,18 @@ interface PetService {
   rating?: number;
 }
 
+interface ServiceCategory {
+  id: string;
+  name: string;
+  query: string;
+}
+
+const serviceCategories: ServiceCategory[] = [
+  { id: 'grooming', name: 'Grooming', query: 'pet grooming salon' },
+  { id: 'boarding', name: 'Boarding', query: 'pet boarding daycare' },
+  { id: 'supplies', name: 'Supplies', query: 'pet store supplies' }
+];
+
 export const PetServicesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,6 +34,7 @@ export const PetServicesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [services, setServices] = useState<PetService[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('grooming');
 
   const searchPetServices = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -43,7 +56,7 @@ export const PetServicesPage = () => {
       } else {
         // Geocode the city to get coordinates
         const geocodeResponse = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&region=us&key=${apiKey}`
         );
         const geocodeData = await geocodeResponse.json();
         
@@ -70,7 +83,7 @@ export const PetServicesPage = () => {
             "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos,places.rating"
           },
           body: JSON.stringify({
-            textQuery: location ? "pet grooming boarding supplies" : `pet grooming boarding supplies in ${searchQuery}`,
+            textQuery: serviceCategories.find(cat => cat.id === selectedCategory)?.query || "pet services",
             locationBias: {
               circle: {
                 center: {
@@ -173,23 +186,39 @@ export const PetServicesPage = () => {
             >
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
-            <Search className="absolute left-11 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pl-20"
+              className="pl-12"
             />
           </div>
           <Button
-            onClick={searchPetServices}
+            onClick={() => searchPetServices()}
             disabled={isLoading || isGettingLocation}
             className="px-6"
           >
             {isLoading ? "Searching..." : "Search"}
           </Button>
+        </div>
+
+        {/* Service Category Filter */}
+        <div className="mt-3">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {serviceCategories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category.id)}
+                className="flex-shrink-0 rounded-full"
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -222,19 +251,9 @@ export const PetServicesPage = () => {
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-base text-foreground line-clamp-1">
-                      {service.name}
-                    </h3>
-                    {service.rating && (
-                      <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary">
-                          {service.rating.toFixed(1)}
-                        </span>
-                        <span className="text-xs text-primary">★</span>
-                      </div>
-                    )}
-                  </div>
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                    {service.name}
+                  </h3>
                   {service.address && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {service.address}

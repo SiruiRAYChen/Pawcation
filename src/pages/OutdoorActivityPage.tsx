@@ -42,7 +42,7 @@ export const OutdoorActivityPage = () => {
       } else {
         // Geocode the city to get coordinates
         const geocodeResponse = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&region=us&key=${apiKey}`
         );
         const geocodeData = await geocodeResponse.json();
         
@@ -69,7 +69,7 @@ export const OutdoorActivityPage = () => {
             "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.photos"
           },
           body: JSON.stringify({
-            textQuery: location ? "pet friendly park outdoor activity" : `pet friendly park outdoor activity in ${searchQuery}`,
+            textQuery: "pet friendly park outdoor dog park",
             locationBias: {
               circle: {
                 center: {
@@ -170,18 +170,17 @@ export const OutdoorActivityPage = () => {
             >
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
-            <Search className="absolute left-11 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pl-20"
+              className="pl-12"
             />
           </div>
           <Button
-            onClick={searchOutdoorPlaces}
+            onClick={() => searchOutdoorPlaces()}
             disabled={isLoading || isGettingLocation}
             className="px-6"
           >
