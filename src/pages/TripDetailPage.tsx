@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import { uploadMemoryPhoto } from "@/lib/storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowLeft, Image as ImageIcon, Plus, Trash2, Upload } from "lucide-react";
@@ -85,32 +86,39 @@ export const TripDetailPage = () => {
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.user_id || !tripId) return;
 
-    // In a real app, you would upload the file to a server
-    // For now, we'll use a local object URL
-    const localPath = URL.createObjectURL(file);
-    
-    // Get the first city as default (if it's a road trip)
-    let defaultCity: string | undefined;
-    if (trip?.trip_type === "Road Trip" && trip.places_passing_by) {
-      try {
-        const cities = JSON.parse(trip.places_passing_by);
-        defaultCity = cities[0];
-      } catch {
-        const cities = trip.places_passing_by.split(',').map(c => c.trim());
-        defaultCity = cities[0];
+    try {
+      const downloadUrl = await uploadMemoryPhoto({
+        file,
+        userId: user.user_id,
+        tripId,
+      });
+
+      // Get the first city as default (if it's a road trip)
+      let defaultCity: string | undefined;
+      if (trip?.trip_type === "Road Trip" && trip.places_passing_by) {
+        try {
+          const cities = JSON.parse(trip.places_passing_by);
+          defaultCity = cities[0];
+        } catch {
+          const cities = trip.places_passing_by.split(',').map(c => c.trim());
+          defaultCity = cities[0];
+        }
+      } else if (trip?.destination) {
+        defaultCity = trip.destination;
       }
-    } else if (trip?.destination) {
-      defaultCity = trip.destination;
-    }
 
-    addPhotoMutation.mutate({
-      local_path: localPath,
-      city_name: defaultCity,
-    });
+      addPhotoMutation.mutate({
+        local_path: downloadUrl,
+        city_name: defaultCity,
+      });
+    } catch (error) {
+      console.error("Failed to upload memory photo:", error);
+      toast.error("Failed to upload photo");
+    }
   };
 
   const handleDeletePhoto = (photoId: string) => {
@@ -184,22 +192,6 @@ export const TripDetailPage = () => {
       </div>
 
       <div className="px-4 pt-4 space-y-6">
-        {/* Itinerary Section */}
-        {itinerary && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            <h2 className="text-xl font-bold text-foreground">Itinerary</h2>
-            <ItineraryTimeline 
-              days={itinerary.days} 
-              total_estimated_cost={itinerary.total_estimated_cost}
-              budget={itinerary.budget}
-            />
-          </motion.div>
-        )}
-
         {/* Photo Gallery Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -280,6 +272,22 @@ export const TripDetailPage = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Itinerary Section */}
+        {itinerary && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            <h2 className="text-xl font-bold text-foreground">Itinerary</h2>
+            <ItineraryTimeline 
+              days={itinerary.days} 
+              total_estimated_cost={itinerary.total_estimated_cost}
+              budget={itinerary.budget}
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

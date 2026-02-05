@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Sparkles, Mail, Lock } from "lucide-react";
+import { PawIcon } from "@/components/icons/PawIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { PawIcon } from "@/components/icons/PawIcon";
+import { motion } from "framer-motion";
+import { Lock, Mail, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
+  const { login, signup, isAuthenticated, loading: authLoading } = useAuth();
   
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
@@ -17,6 +17,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/');
+    }
+  }, [authLoading, isAuthenticated, navigate]);
 
   // Password validation function
   const validatePassword = (pwd: string) => {
@@ -48,7 +54,6 @@ export default function LoginPage() {
       } else {
         await signup(email, password);
       }
-      navigate('/');  // 成功后跳转到主页
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
@@ -64,12 +69,10 @@ export default function LoginPage() {
 
     try {
       await login('test@pawcation.com', 'password123');
-      navigate('/');
     } catch (err: any) {
       // If user doesn't exist, create it
       try {
         await signup('test@pawcation.com', 'password123');
-        navigate('/');
       } catch (signupErr: any) {
         setError(signupErr.message || 'Quick login failed');
       }

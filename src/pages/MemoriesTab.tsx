@@ -22,6 +22,9 @@ export const MemoriesTab = () => {
             <h1 className="text-2xl font-extrabold text-foreground">Memories</h1>
           </div>
         </motion.div>
+        <p className="text-muted-foreground">
+          Memories guide our next adventure.
+        </p>
 
         {/* Tab Navigation */}
         <div className="flex gap-2">

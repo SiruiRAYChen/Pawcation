@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       try {
+        setLoading(true);
         if (firebaseUser) {
           // Fetch additional user data from Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -83,21 +84,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login with Firebase Auth
   const login = async (email: string, password: string) => {
     try {
-      setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       // User state will be updated by onAuthStateChanged
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Login failed');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Signup with Firebase Auth
   const signup = async (email: string, password: string) => {
     try {
-      setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
       // Create user document in Firestore
@@ -112,8 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error('Signup error:', error);
       throw new Error(error.message || 'Signup failed');
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -26,6 +26,7 @@ export const PastTripsPage = () => {
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<number | null>(null);
+  const [swipedTripId, setSwipedTripId] = useState<string | number | null>(null);
 
   // Fetch past trips
   const { data: pastTrips = [], isLoading } = useQuery({
@@ -58,6 +59,7 @@ export const PastTripsPage = () => {
   const handleDeleteClick = (tripId: number) => {
     setTripToDelete(tripId);
     setDeleteDialogOpen(true);
+    setSwipedTripId(tripId);
   };
 
   const handleDeleteConfirm = () => {
@@ -149,8 +151,11 @@ export const PastTripsPage = () => {
                 onDragEnd={(e, info) => {
                   if (info.offset.x < -40) {
                     handleDeleteClick(trip.plan_id!);
+                  } else {
+                    setSwipedTripId(null);
                   }
                 }}
+                animate={{ x: swipedTripId === trip.plan_id ? -80 : 0 }}
                 className="relative bg-card rounded-2xl border overflow-hidden shadow-paw cursor-pointer"
                 onClick={() => navigate(`/memories/trip/${trip.plan_id}`)}
               >
@@ -224,7 +229,16 @@ export const PastTripsPage = () => {
       </AnimatePresence>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setSwipedTripId(null);
+            setTripToDelete(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Trip?</AlertDialogTitle>

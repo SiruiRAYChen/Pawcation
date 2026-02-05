@@ -100,6 +100,21 @@ router.get('/:planId', async (req, res) => {
     }
 
     const data = planDoc.data();
+    let memoItems = data?.memoItems || [];
+    if (memoItems.length === 0 && data?.detailedItinerary) {
+      try {
+        const parsedItinerary = typeof data.detailedItinerary === 'string'
+          ? JSON.parse(data.detailedItinerary)
+          : data.detailedItinerary;
+        const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+        if (Array.isArray(packingMemo)) {
+          memoItems = packingMemo.map((item: string) => ({ item, checked: false }));
+        }
+      } catch (error) {
+        console.error('Error parsing detailed_itinerary for packing_memo:', error);
+      }
+    }
+
     return res.json({
       plan_id: planDoc.id,
       user_id: data?.userId,
@@ -116,7 +131,7 @@ router.get('/:planId', async (req, res) => {
       budget: data?.budget,
       origin: data?.origin,
       pet_ids: data?.petIds,
-      memo_items: data?.memoItems || [],
+      memo_items: memoItems,
     });
   } catch (error: any) {
     console.error('Error getting plan:', error);
@@ -135,6 +150,21 @@ router.get('/user/:userId/plans', async (req, res) => {
 
     const plans = plansSnapshot.docs.map(doc => {
       const data = doc.data();
+      let memoItems = data.memoItems || [];
+      if (memoItems.length === 0 && data?.detailedItinerary) {
+        try {
+          const parsedItinerary = typeof data.detailedItinerary === 'string'
+            ? JSON.parse(data.detailedItinerary)
+            : data.detailedItinerary;
+          const packingMemo = parsedItinerary?.packing_memo || parsedItinerary?.packingMemo;
+          if (Array.isArray(packingMemo)) {
+            memoItems = packingMemo.map((item: string) => ({ item, checked: false }));
+          }
+        } catch (error) {
+          console.error('Error parsing detailed_itinerary for packing_memo:', error);
+        }
+      }
+
       return {
         plan_id: doc.id,
         user_id: data.userId,
@@ -151,7 +181,7 @@ router.get('/user/:userId/plans', async (req, res) => {
         budget: data.budget,
         origin: data.origin,
         pet_ids: data.petIds,
-        memo_items: data.memoItems || [],
+        memo_items: memoItems,
       };
     });
 
@@ -239,29 +269,37 @@ router.delete('/:planId', async (req, res) => {
 // Generate itinerary
 router.post('/generate-itinerary', async (req, res) => {
   try {
-    const { pet_id, origin, destination, start_date, end_date, num_adults, num_children, budget } = req.body;
+    const { pet_id, pet_ids, origin, destination, start_date, end_date, num_adults, num_children, budget } = req.body;
 
-    const petDoc = await db.collection('pets').doc(pet_id).get();
-    if (!petDoc.exists) {
+    const petIds: string[] = Array.isArray(pet_ids) ? pet_ids : pet_id ? [pet_id] : [];
+    if (petIds.length === 0) {
+      return res.status(400).json({ detail: 'Missing required field: pet_ids' });
+    }
+
+    const petDocs = await Promise.all(petIds.map((id) => db.collection('pets').doc(id).get()));
+    const missingPet = petDocs.find((doc) => !doc.exists);
+    if (missingPet) {
       return res.status(404).json({ detail: 'Pet not found' });
     }
 
-    const petData = petDoc.data();
-    const petInfo = {
-      name: petData?.name || '',
-      breed: petData?.breed,
-      age: calculatePetAge(petData?.dateOfBirth),
-      size: petData?.size,
-      personality: petData?.personality || [],
-      health: petData?.health,
-    };
+    const petInfos = petDocs.map((petDoc) => {
+      const petData = petDoc.data();
+      return {
+        name: petData?.name || '',
+        breed: petData?.breed,
+        age: calculatePetAge(petData?.dateOfBirth),
+        size: petData?.size,
+        personality: petData?.personality || [],
+        health: petData?.health,
+      };
+    });
 
     const result = await generateTravelItinerary({
       origin,
       destination,
       startDate: start_date,
       endDate: end_date,
-      petInfo,
+      pets: petInfos,
       numAdults: num_adults,
       numChildren: num_children,
       budget,
@@ -281,29 +319,37 @@ router.post('/generate-itinerary', async (req, res) => {
 // Generate road trip itinerary
 router.post('/generate-road-trip-itinerary', async (req, res) => {
   try {
-    const { pet_id, origin, destination, start_date, end_date, num_adults, num_children, is_round_trip, budget } = req.body;
+    const { pet_id, pet_ids, origin, destination, start_date, end_date, num_adults, num_children, is_round_trip, budget } = req.body;
 
-    const petDoc = await db.collection('pets').doc(pet_id).get();
-    if (!petDoc.exists) {
+    const petIds: string[] = Array.isArray(pet_ids) ? pet_ids : pet_id ? [pet_id] : [];
+    if (petIds.length === 0) {
+      return res.status(400).json({ detail: 'Missing required field: pet_ids' });
+    }
+
+    const petDocs = await Promise.all(petIds.map((id) => db.collection('pets').doc(id).get()));
+    const missingPet = petDocs.find((doc) => !doc.exists);
+    if (missingPet) {
       return res.status(404).json({ detail: 'Pet not found' });
     }
 
-    const petData = petDoc.data();
-    const petInfo = {
-      name: petData?.name || '',
-      breed: petData?.breed,
-      age: calculatePetAge(petData?.dateOfBirth),
-      size: petData?.size,
-      personality: petData?.personality || [],
-      health: petData?.health,
-    };
+    const petInfos = petDocs.map((petDoc) => {
+      const petData = petDoc.data();
+      return {
+        name: petData?.name || '',
+        breed: petData?.breed,
+        age: calculatePetAge(petData?.dateOfBirth),
+        size: petData?.size,
+        personality: petData?.personality || [],
+        health: petData?.health,
+      };
+    });
 
     const result = await generateRoadTripItinerary({
       origin,
       destination,
       startDate: start_date,
       endDate: end_date,
-      petInfo,
+      pets: petInfos,
       numAdults: num_adults,
       numChildren: num_children,
       isRoundTrip: is_round_trip,

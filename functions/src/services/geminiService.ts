@@ -108,7 +108,7 @@ export async function generateTravelItinerary(params: {
   destination: string;
   startDate: string;
   endDate: string;
-  petInfo: PetInfo;
+  pets: PetInfo[];
   numAdults: number;
   numChildren: number;
   budget?: number;
@@ -122,11 +122,14 @@ export async function generateTravelItinerary(params: {
   
   console.log('Generating travel itinerary from', params.origin, 'to', params.destination);
 
-  const { origin, destination, startDate, endDate, petInfo, numAdults, numChildren, budget } = params;
+  const { origin, destination, startDate, endDate, pets, numAdults, numChildren, budget } = params;
 
-  const personalityStr = petInfo.personality && petInfo.personality.length > 0 
-    ? petInfo.personality.join(', ') 
-    : 'friendly';
+  const petsSummary = pets.map((pet) => {
+    const personalityStr = pet.personality && pet.personality.length > 0
+      ? pet.personality.join(', ')
+      : 'friendly';
+    return `- ${pet.name || 'Pet'}: ${pet.age || 'unknown age'} ${pet.breed || 'unknown breed'} (${pet.size || 'medium'} size, ${personalityStr})${pet.health ? `; Health: ${pet.health}` : ''}`;
+  }).join('\n');
   
   const budgetInstruction = budget ? `
 BUDGET CONSTRAINT:
@@ -143,8 +146,7 @@ BUDGET CONSTRAINT:
 TRAVELING PARTY:
 - ${numAdults} adult(s)
 - ${numChildren} child(ren)
-- Pet: ${petInfo.name}, a ${petInfo.age || 'unknown age'} ${petInfo.breed || 'unknown breed'} (${petInfo.size || 'medium'} size, ${personalityStr})
-${petInfo.health ? `- Health considerations: ${petInfo.health}` : ''}
+- Pets:\n${petsSummary}
 
 CRITICAL INSTRUCTIONS:
 1. **DO NOT provide specific flight numbers, departure times, or airline booking details.** Instead, suggest which airlines generally allow pets in-cabin or cargo for this route, and what time windows (morning/afternoon/evening) are typically available.
@@ -157,7 +159,7 @@ CRITICAL INSTRUCTIONS:
 8. **LOCATION FORMAT REQUIREMENT: ALL city names in "subtitle" fields MUST use the format "City, State" (e.g., "Boston, Massachusetts", "Los Angeles, California"). This is critical for map functionality.**
 ${budgetInstruction}
 9. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item with a dollar amount.
-10. **PACKING MEMO**: Generate 5-8 specific items based on pet's health, personality, weather, and destination. Keep items concise. The packing_memo array MUST be non-empty.
+10. **PACKING MEMO**: Generate 5-8 specific items based on the pets' health, personality, weather, and destination. Keep items concise. The packing_memo array MUST be non-empty.
 
 Return a JSON object with this EXACT structure:
 {
@@ -175,7 +177,7 @@ Return a JSON object with this EXACT structure:
       "alerts": [
         {
           "type": "weather",
-          "message": "🌡️ High of 85°F — Pack extra water for ${petInfo.name}!"
+          "message": "🌡️ High of 85°F — Pack extra water for the pets!"
         }
       ],
       "items": [
@@ -219,7 +221,7 @@ Valid values for fields:
 - type: "transport", "accommodation", "dining", "activity"
 - compliance: "approved", "conditional", "notAllowed"
 
-Make sure all recommendations are realistic for ${destination} and appropriate for a ${petInfo.breed || 'pet'}. REMEMBER: All city references in subtitles must include the state (e.g., "Boston, Massachusetts", not just "Boston"). Return ONLY valid JSON.`;
+Make sure all recommendations are realistic for ${destination} and appropriate for the pets listed above. REMEMBER: All city references in subtitles must include the state (e.g., "Boston, Massachusetts", not just "Boston"). Return ONLY valid JSON.`;
 
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -289,7 +291,7 @@ export async function generateRoadTripItinerary(params: {
   destination: string;
   startDate: string;
   endDate: string;
-  petInfo: PetInfo;
+  pets: PetInfo[];
   numAdults: number;
   numChildren: number;
   isRoundTrip: boolean;
@@ -304,11 +306,14 @@ export async function generateRoadTripItinerary(params: {
   
   console.log('Generating road trip itinerary from', params.origin, 'to', params.destination);
 
-  const { origin, destination, startDate, endDate, petInfo, numAdults, numChildren, isRoundTrip, budget } = params;
+  const { origin, destination, startDate, endDate, pets, numAdults, numChildren, isRoundTrip, budget } = params;
 
-  const personalityStr = petInfo.personality && petInfo.personality.length > 0 
-    ? petInfo.personality.join(', ') 
-    : 'friendly';
+  const petsSummary = pets.map((pet) => {
+    const personalityStr = pet.personality && pet.personality.length > 0
+      ? pet.personality.join(', ')
+      : 'friendly';
+    return `- ${pet.name || 'Pet'}: ${pet.age || 'unknown age'} ${pet.breed || 'unknown breed'} (${pet.size || 'medium'} size, ${personalityStr})${pet.health ? `; Health: ${pet.health}` : ''}`;
+  }).join('\n');
   
   const tripTypeNote = isRoundTrip ? 'round trip' : 'one-way';
   
@@ -334,24 +339,23 @@ BUDGET CONSTRAINT:
 TRAVELING PARTY:
 - ${numAdults} adult(s)
 - ${numChildren} child(ren)
-- Pet: ${petInfo.name}, a ${petInfo.age || 'unknown age'} ${petInfo.breed || 'unknown breed'} (${petInfo.size || 'medium'} size, ${personalityStr})
-${petInfo.health ? `- Health considerations: ${petInfo.health}` : ''}
+- Pets:\n${petsSummary}
 
 CRITICAL INSTRUCTIONS FOR ROAD TRIPS:
 1. **FOCUS ON THE JOURNEY, NOT JUST THE DESTINATION** - This is a road trip, so emphasize scenic routes, interesting waypoints, and experiences along the way.
 2. **Pet considerations are TOP PRIORITY** - Every stop, accommodation, and activity MUST be pet-friendly.
-3. **Include strategic rest stops** - Every 2-3 hours of driving, suggest pet-friendly rest areas, parks, or scenic viewpoints where ${petInfo.name} can stretch, play, and relieve themselves.
+3. **Include strategic rest stops** - Every 2-3 hours of driving, suggest pet-friendly rest areas, parks, or scenic viewpoints where the pets can stretch, play, and relieve themselves.
 4. **Suggest driving routes** - Recommend specific highways or scenic byways (e.g., "Take Highway 101 along the coast" or "I-90 through mountain passes").
 5. **Pet-friendly accommodations** - Hotels/motels that welcome pets, with outdoor spaces. Mention pet fees if typical for the area.
 6. **Roadside attractions** - Pet-friendly attractions, hiking trails, dog parks, beaches, or outdoor cafes along the route.
 7. **Pack list reminders** - Occasionally remind about essentials: water bowls, leash, waste bags, pet first aid kit, comfort items.
 8. **Weather and safety** - Alert about temperature concerns (hot car warnings), road conditions, or elevation changes that might affect pets.
-9. **Meal and water breaks** - Regular stops for ${petInfo.name} to eat, drink, and rest.
+9. **Meal and water breaks** - Regular stops for the pets to eat, drink, and rest.
 10. **LOCATION FORMAT REQUIREMENT: ALL city names in "subtitle" and "dayLabel" fields MUST use the format "City, State" (e.g., "Boston, Massachusetts", "Chicago, Illinois"). This is CRITICAL for map functionality. When mentioning cities along the route, always include the state.**
 ${roundTripInstruction}
 ${budgetInstruction}
 11. **IMPORTANT: Include realistic estimated costs for each item.** Add an "estimated_cost" field to every item (gas, tolls, hotels, meals, activities).
-12. **PACKING MEMO**: Generate 5-8 specific items for this road trip based on pet's health, personality, weather, and activities. Keep items concise. The packing_memo array MUST be non-empty.
+12. **PACKING MEMO**: Generate 5-8 specific items for this road trip based on the pets' health, personality, weather, and activities. Keep items concise. The packing_memo array MUST be non-empty.
 
 Return a JSON object with this EXACT structure:
 {
@@ -369,7 +373,7 @@ Return a JSON object with this EXACT structure:
       "alerts": [
         {
           "type": "weather",
-          "message": "🌡️ High of 85°F — Keep ${petInfo.name} hydrated! Bring extra water."
+          "message": "🌡️ High of 85°F — Keep the pets hydrated! Bring extra water."
         }
       ],
       "items": [
@@ -388,7 +392,7 @@ Return a JSON object with this EXACT structure:
           "time": "morning",
           "type": "activity",
           "title": "Dog-Friendly Beach Stop",
-          "subtitle": "Santa Barbara, California • 30-minute break for ${petInfo.name} to run and play",
+          "subtitle": "Santa Barbara, California • 30-minute break for the pets to run and play",
           "compliance": "approved",
           "complianceNote": "Off-leash area available",
           "estimated_cost": 0.00
@@ -437,7 +441,7 @@ Make sure:
 - Include mileage and estimated driving time for each segment
 - Suggest actual rest stops every 2-3 hours of driving
 - All recommendations are realistic for the route from ${origin} to ${destination}
-- Activities and stops are appropriate for a ${petInfo.breed || 'pet'}
+- Activities and stops are appropriate for the pets listed above
 - For round trips, the return journey uses a different route with different stops
 
 Return ONLY valid JSON.`;
