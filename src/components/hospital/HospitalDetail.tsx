@@ -4,6 +4,9 @@ import { ArrowLeft, MapPin, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { db } from "@/lib/firebaseConfig";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HospitalDetailProps {
   place_id?: string;
@@ -19,15 +22,33 @@ interface HospitalDetailData {
   websiteUri?: string;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  content: string;
+  createdAt: any;
+  userName?: string;
+}
+
+type TabType = 'photos' | 'reviews';
+
 export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) => {
   const { place_id: paramPlaceId } = useParams<{ place_id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [hospitalData, setHospitalData] = useState<HospitalDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('photos');
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    content: ''
+  });
   
   // Get place_id from props, URL params, or location state
   const placeId = propPlaceId || paramPlaceId || location.state?.place_id;
@@ -43,6 +64,29 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
     }
 
     fetchHospitalDetails();
+  }, [placeId]);
+
+  // Fetch reviews from Firebase
+  useEffect(() => {
+    if (!placeId) return;
+
+    const reviewsQuery = query(
+      collection(db, 'reviews'),
+      where('placeId', '==', placeId)
+      // orderBy('createdAt', 'desc') // Temporarily commented - waiting for index to build
+    );
+
+    const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
+      const reviewsData: Review[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Review));
+      setReviews(reviewsData);
+    }, (error) => {
+      console.error("Error fetching reviews:", error);
+    });
+
+    return () => unsubscribe();
   }, [placeId]);
 
   const fetchHospitalDetails = async () => {
@@ -139,6 +183,45 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
       toast({
         title: "Phone number not available",
         description: "Contact information is not available for this hospital",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!placeId || !reviewForm.content.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        placeId: placeId,
+        rating: reviewForm.rating,
+        content: reviewForm.content,
+        createdAt: serverTimestamp(),
+        userName: user?.name || "Anonymous"
+      });
+
+      toast({
+        title: "Review submitted",
+        description: "Thank you for your review!",
+      });
+
+      // Reset form
+      setReviewForm({ rating: 5, content: '' });
+      setShowReviewForm(false);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast({
+        title: "Failed to submit review",
+        description: "Please try again later",
         variant: "destructive",
       });
     }
@@ -267,8 +350,32 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
           </div>
         )}
 
-        {/* Additional Photos */}
-        {hospitalData.photos.length > 1 && (
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-border">
+          <button
+            onClick={() => setActiveTab('photos')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'photos'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Photos
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'reviews'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Reviews ({reviews.length})
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'photos' && hospitalData.photos.length > 1 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Photos</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -284,6 +391,116 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
             </div>
           </div>
         )}
+
+        {activeTab === 'reviews' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Reviews</h3>
+              <Button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+              >
+                {showReviewForm ? 'Cancel' : 'Write a Review'}
+              </Button>
+            </div>
+
+            {/* Review Form */}
+            {showReviewForm && (
+              <motion.form
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                onSubmit={handleSubmitReview}
+                className="bg-muted p-4 rounded-lg space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Rating (1-5)
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                        className="focus:outline-none"
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= reviewForm.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Your Review
+                  </label>
+                  <textarea
+                    value={reviewForm.content}
+                    onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background min-h-[100px]"
+                    placeholder="Share your experience..."
+                    required
+                  />
+                </div>
+
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  Submit Review
+                </Button>
+              </motion.form>
+            )}
+
+            {/* Reviews List */}
+            <div className="space-y-4">
+              {reviews.length === 0 && !showReviewForm ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No reviews yet. Be the first to write one!
+                </p>
+              ) : reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <motion.div
+                    key={review.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-muted p-4 rounded-lg space-y-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < review.rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {review.userName || 'Anonymous'}
+                      </span>
+                    </div>
+                    <p className="text-foreground">{review.content}</p>
+                    {review.createdAt && (
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(review.createdAt.toDate()).toLocaleDateString()}
+                      </p>
+                    )}
+                  </motion.div>
+                ))
+              ) : null}
+            </div>
+          </div>
+        )}
+
       </motion.div>
 
       {/* Action Button */}

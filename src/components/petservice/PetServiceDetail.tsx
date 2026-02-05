@@ -4,6 +4,9 @@ import { ArrowLeft, MapPin, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { db } from "@/lib/firebaseConfig";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PetServiceDetailProps {
   place_id?: string;
@@ -19,15 +22,33 @@ interface PetServiceDetailData {
   websiteUri?: string;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  content: string;
+  createdAt: any;
+  userName?: string;
+}
+
+type TabType = 'photos' | 'reviews';
+
 export const PetServiceDetail = ({ place_id: propPlaceId }: PetServiceDetailProps) => {
   const { place_id: paramPlaceId } = useParams<{ place_id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [serviceData, setServiceData] = useState<PetServiceDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('photos');
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    content: ''
+  });
   
   // Get place_id from props, URL params, or location state
   const placeId = propPlaceId || paramPlaceId || location.state?.place_id;
@@ -131,6 +152,29 @@ export const PetServiceDetail = ({ place_id: propPlaceId }: PetServiceDetailProp
       setIsLoading(false);
     }
   };
+
+  // Fetch reviews from Firebase
+  useEffect(() => {
+    if (!placeId) return;
+
+    const reviewsQuery = query(
+      collection(db, 'reviews'),
+      where('placeId', '==', placeId)
+      // orderBy('createdAt', 'desc') // Temporarily commented - waiting for index to build
+    );
+
+    const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
+      const reviewsData: Review[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Review));
+      setReviews(reviewsData);
+    }, (error) => {
+      console.error("Error fetching reviews:", error);
+    });
+
+    return () => unsubscribe();
+  }, [placeId]);
 
   const handleCall = () => {
     if (serviceData?.nationalPhoneNumber) {
