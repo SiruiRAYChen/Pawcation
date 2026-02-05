@@ -36,12 +36,13 @@ export const HospitalPage = () => {
         console.error('Error loading saved search data:', error);
       }
     }
-
-    // Cleanup function to clear cache when leaving the page
-    return () => {
-      sessionStorage.removeItem('hospitalSearchData');
-    };
   }, []);
+
+  // Clear cache when user explicitly navigates back to explore
+  const handleBackToExplore = () => {
+    sessionStorage.removeItem('hospitalSearchData');
+    navigate(-1);
+  };
 
   // Save search data whenever it changes (but only temporarily)
   useEffect(() => {
@@ -197,7 +198,7 @@ export const HospitalPage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={handleBackToExplore}
             className="rounded-full"
           >
             <ArrowLeft className="w-5 h-5" />

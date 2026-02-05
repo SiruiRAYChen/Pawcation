@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebaseConfig";
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface HotelDetailProps {
@@ -29,6 +29,7 @@ interface Review {
   content: string;
   createdAt: any;
   userName?: string;
+  userId?: string;
 }
 
 type TabType = 'photos' | 'reviews';
@@ -209,7 +210,8 @@ export const HotelDetail = ({ place_id: propPlaceId }: HotelDetailProps) => {
         petFee: reviewForm.petFee,
         content: reviewForm.content,
         createdAt: serverTimestamp(),
-        userName: user?.name || "Anonymous"
+        userName: user?.name || "Anonymous",
+        userId: user?.user_id || null
       });
 
       toast({
@@ -224,6 +226,23 @@ export const HotelDetail = ({ place_id: propPlaceId }: HotelDetailProps) => {
       console.error("Error submitting review:", error);
       toast({
         title: "Failed to submit review",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteDoc(doc(db, 'reviews', reviewId));
+      toast({
+        title: "Review deleted",
+        description: "Your review has been removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast({
+        title: "Failed to delete review",
         description: "Please try again later",
         variant: "destructive",
       });
@@ -489,7 +508,7 @@ export const HotelDetail = ({ place_id: propPlaceId }: HotelDetailProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-muted p-4 rounded-lg space-y-2"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <div className="flex">
                           {[...Array(5)].map((_, i) => (
@@ -507,11 +526,22 @@ export const HotelDetail = ({ place_id: propPlaceId }: HotelDetailProps) => {
                           {review.userName || 'Anonymous'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
-                        <span className="font-semibold text-primary">
-                          ${review.petFee.toFixed(2)}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1">pet fee</span>
+                      <div className="flex flex-col items-end gap-2">
+                        {user?.user_id && review.userId === user.user_id && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="text-xs text-destructive hover:text-destructive/80"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
+                          <span className="font-semibold text-primary">
+                            ${review.petFee.toFixed(2)}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-1">pet fee</span>
+                        </div>
                       </div>
                     </div>
                     <p className="text-foreground">{review.content}</p>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebaseConfig";
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface HospitalDetailProps {
@@ -28,6 +28,7 @@ interface Review {
   content: string;
   createdAt: any;
   userName?: string;
+  userId?: string;
 }
 
 type TabType = 'photos' | 'reviews';
@@ -206,7 +207,8 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
         rating: reviewForm.rating,
         content: reviewForm.content,
         createdAt: serverTimestamp(),
-        userName: user?.name || "Anonymous"
+        userName: user?.name || "Anonymous",
+        userId: user?.user_id || null
       });
 
       toast({
@@ -221,6 +223,23 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
       console.error("Error submitting review:", error);
       toast({
         title: "Failed to submit review",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteDoc(doc(db, 'reviews', reviewId));
+      toast({
+        title: "Review deleted",
+        description: "Your review has been removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast({
+        title: "Failed to delete review",
         description: "Please try again later",
         variant: "destructive",
       });
@@ -471,22 +490,33 @@ export const HospitalDetail = ({ place_id: propPlaceId }: HospitalDetailProps) =
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-muted p-4 rounded-lg space-y-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {review.userName || 'Anonymous'}
+                        </span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        {review.userName || 'Anonymous'}
-                      </span>
+                      {user?.user_id && review.userId === user.user_id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(review.id)}
+                          className="text-xs text-destructive hover:text-destructive/80"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                     <p className="text-foreground">{review.content}</p>
                     {review.createdAt && (

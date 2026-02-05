@@ -35,12 +35,13 @@ export const OutdoorActivityPage = () => {
         console.error('Error loading saved search data:', error);
       }
     }
-
-    // Cleanup function to clear cache when leaving the page
-    return () => {
-      sessionStorage.removeItem('outdoorSearchData');
-    };
   }, []);
+
+  // Clear cache when user explicitly navigates back to explore
+  const handleBackToExplore = () => {
+    sessionStorage.removeItem('outdoorSearchData');
+    navigate(-1);
+  };
 
   // Save search data whenever it changes (but only temporarily)
   useEffect(() => {
@@ -193,7 +194,7 @@ export const OutdoorActivityPage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={handleBackToExplore}
             className="rounded-full"
           >
             <ArrowLeft className="w-5 h-5" />
