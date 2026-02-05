@@ -220,6 +220,7 @@ export const TripDetailPage = () => {
               Add Photo
             </Button>
             <input
+              id="trip-photo-upload"
               ref={fileInputRef}
               type="file"
               accept="image/*"

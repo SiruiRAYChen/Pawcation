@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ interface Hospital {
   address?: string;
   photoUrl?: string;
   rating?: number;
+  place_id?: string;
 }
 
 export const HospitalPage = () => {
@@ -22,6 +23,36 @@ export const HospitalPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved search data on component mount
+  useEffect(() => {
+    const savedSearchData = sessionStorage.getItem('hospitalSearchData');
+    if (savedSearchData) {
+      try {
+        const { query, results } = JSON.parse(savedSearchData);
+        setSearchQuery(query || "");
+        setHospitals(results || []);
+      } catch (error) {
+        console.error('Error loading saved search data:', error);
+      }
+    }
+
+    // Cleanup function to clear cache when leaving the page
+    return () => {
+      sessionStorage.removeItem('hospitalSearchData');
+    };
+  }, []);
+
+  // Save search data whenever it changes (but only temporarily)
+  useEffect(() => {
+    if (searchQuery || hospitals.length > 0) {
+      const searchData = {
+        query: searchQuery,
+        results: hospitals
+      };
+      sessionStorage.setItem('hospitalSearchData', JSON.stringify(searchData));
+    }
+  }, [searchQuery, hospitals]);
 
   const searchHospitals = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -96,6 +127,7 @@ export const HospitalPage = () => {
           
           return {
             id: place.id,
+            place_id: place.id, // Add place_id for navigation
             name: place.displayName?.text || "Unknown Hospital",
             address: place.formattedAddress,
             photoUrl,
@@ -120,6 +152,20 @@ export const HospitalPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleHospitalClick = (hospital: Hospital) => {
+    navigate(`/hospital/${hospital.place_id}`, {
+      state: {
+        place_id: hospital.place_id,
+        hospitalData: {
+          name: hospital.name,
+          address: hospital.address,
+          photos: hospital.photoUrl ? [hospital.photoUrl] : [],
+          rating: hospital.rating,
+        }
+      }
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -174,6 +220,8 @@ export const HospitalPage = () => {
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Input
+              id="hospital-search"
+              name="hospitalSearch"
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
@@ -196,12 +244,13 @@ export const HospitalPage = () => {
       <div className="px-4 space-y-3">
         {hospitals.length > 0 ? (
           hospitals.map((hospital, index) => (
-            <motion.div
+            <motion.button
               key={hospital.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all"
+              onClick={() => handleHospitalClick(hospital)}
+              className="w-full bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex gap-3">
                 {/* Image */}
@@ -220,18 +269,18 @@ export const HospitalPage = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1 text-left">
                     {hospital.name}
                   </h3>
                   {hospital.address && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 text-left">
                       {hospital.address}
                     </p>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))
         ) : (
           <div className="text-center py-12">

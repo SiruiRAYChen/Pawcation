@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ interface OutdoorPlace {
   name: string;
   address?: string;
   photoUrl?: string;
+  place_id?: string;
 }
 
 export const OutdoorActivityPage = () => {
@@ -21,6 +22,36 @@ export const OutdoorActivityPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [places, setPlaces] = useState<OutdoorPlace[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved search data on component mount
+  useEffect(() => {
+    const savedSearchData = sessionStorage.getItem('outdoorSearchData');
+    if (savedSearchData) {
+      try {
+        const { query, results } = JSON.parse(savedSearchData);
+        setSearchQuery(query || "");
+        setPlaces(results || []);
+      } catch (error) {
+        console.error('Error loading saved search data:', error);
+      }
+    }
+
+    // Cleanup function to clear cache when leaving the page
+    return () => {
+      sessionStorage.removeItem('outdoorSearchData');
+    };
+  }, []);
+
+  // Save search data whenever it changes (but only temporarily)
+  useEffect(() => {
+    if (searchQuery || places.length > 0) {
+      const searchData = {
+        query: searchQuery,
+        results: places
+      };
+      sessionStorage.setItem('outdoorSearchData', JSON.stringify(searchData));
+    }
+  }, [searchQuery, places]);
 
   const searchOutdoorPlaces = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -94,6 +125,7 @@ export const OutdoorActivityPage = () => {
           
           return {
             id: place.id,
+            place_id: place.id, // Add place_id for navigation
             name: place.displayName?.text || "Unknown Place",
             address: place.formattedAddress,
             photoUrl
@@ -117,6 +149,19 @@ export const OutdoorActivityPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePlaceClick = (place: OutdoorPlace) => {
+    navigate(`/outdoor/${place.place_id}`, {
+      state: {
+        place_id: place.place_id,
+        outdoorData: {
+          name: place.name,
+          address: place.address,
+          photos: place.photoUrl ? [place.photoUrl] : [],
+        }
+      }
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -171,6 +216,8 @@ export const OutdoorActivityPage = () => {
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Input
+              id="outdoor-search"
+              name="outdoorSearch"
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
@@ -193,12 +240,13 @@ export const OutdoorActivityPage = () => {
       <div className="px-4 space-y-3">
         {places.length > 0 ? (
           places.map((place, index) => (
-            <motion.div
+            <motion.button
               key={place.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all"
+              onClick={() => handlePlaceClick(place)}
+              className="w-full bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex gap-3">
                 {/* Image */}
@@ -217,18 +265,18 @@ export const OutdoorActivityPage = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1 text-left">
                     {place.name}
                   </h3>
                   {place.address && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 text-left">
                       {place.address}
                     </p>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))
         ) : (
           <div className="text-center py-12">

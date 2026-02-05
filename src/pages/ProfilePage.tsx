@@ -164,6 +164,7 @@ export const ProfilePage = () => {
           </div>
           <p className="text-sm text-gray-500 mt-2">Tap to edit</p>
           <input
+            id="profile-avatar-upload"
             ref={fileInputRef}
             type="file"
             accept="image/*"

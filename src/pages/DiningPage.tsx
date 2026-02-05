@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ interface Restaurant {
   name: string;
   address?: string;
   photoUrl?: string;
+  place_id?: string;
 }
 
 export const DiningPage = () => {
@@ -21,6 +22,36 @@ export const DiningPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved search data on component mount
+  useEffect(() => {
+    const savedSearchData = sessionStorage.getItem('restaurantSearchData');
+    if (savedSearchData) {
+      try {
+        const { query, results } = JSON.parse(savedSearchData);
+        setSearchQuery(query || "");
+        setRestaurants(results || []);
+      } catch (error) {
+        console.error('Error loading saved search data:', error);
+      }
+    }
+
+    // Cleanup function to clear cache when leaving the page
+    return () => {
+      sessionStorage.removeItem('restaurantSearchData');
+    };
+  }, []);
+
+  // Save search data whenever it changes (but only temporarily)
+  useEffect(() => {
+    if (searchQuery || restaurants.length > 0) {
+      const searchData = {
+        query: searchQuery,
+        results: restaurants
+      };
+      sessionStorage.setItem('restaurantSearchData', JSON.stringify(searchData));
+    }
+  }, [searchQuery, restaurants]);
 
   const searchRestaurants = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -94,6 +125,7 @@ export const DiningPage = () => {
           
           return {
             id: place.id,
+            place_id: place.id, // Add place_id for navigation
             name: place.displayName?.text || "Unknown Restaurant",
             address: place.formattedAddress,
             photoUrl
@@ -117,6 +149,19 @@ export const DiningPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRestaurantClick = (restaurant: Restaurant) => {
+    navigate(`/dining/${restaurant.place_id}`, {
+      state: {
+        place_id: restaurant.place_id,
+        restaurantData: {
+          name: restaurant.name,
+          address: restaurant.address,
+          photos: restaurant.photoUrl ? [restaurant.photoUrl] : [],
+        }
+      }
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -171,6 +216,8 @@ export const DiningPage = () => {
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Input
+              id="dining-search"
+              name="diningSearch"
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
@@ -193,12 +240,13 @@ export const DiningPage = () => {
       <div className="px-4 space-y-3">
         {restaurants.length > 0 ? (
           restaurants.map((restaurant, index) => (
-            <motion.div
+            <motion.button
               key={restaurant.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all"
+              onClick={() => handleRestaurantClick(restaurant)}
+              className="w-full bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex gap-3">
                 {/* Image */}
@@ -217,18 +265,18 @@ export const DiningPage = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1 text-left">
                     {restaurant.name}
                   </h3>
                   {restaurant.address && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 text-left">
                       {restaurant.address}
                     </p>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))
         ) : (
           <div className="text-center py-12">

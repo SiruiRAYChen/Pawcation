@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ interface Hotel {
   address?: string;
   photoUrl?: string;
   rating?: number;
+  place_id?: string;
 }
 
 export const HotelsPage = () => {
@@ -22,6 +23,36 @@ export const HotelsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved search data on component mount
+  useEffect(() => {
+    const savedSearchData = sessionStorage.getItem('hotelSearchData');
+    if (savedSearchData) {
+      try {
+        const { query, results } = JSON.parse(savedSearchData);
+        setSearchQuery(query || "");
+        setHotels(results || []);
+      } catch (error) {
+        console.error('Error loading saved search data:', error);
+      }
+    }
+
+    // Cleanup function to clear cache when leaving the page
+    return () => {
+      sessionStorage.removeItem('hotelSearchData');
+    };
+  }, []);
+
+  // Save search data whenever it changes (but only temporarily)
+  useEffect(() => {
+    if (searchQuery || hotels.length > 0) {
+      const searchData = {
+        query: searchQuery,
+        results: hotels
+      };
+      sessionStorage.setItem('hotelSearchData', JSON.stringify(searchData));
+    }
+  }, [searchQuery, hotels]);
 
   const searchHotels = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -96,6 +127,7 @@ export const HotelsPage = () => {
           
           return {
             id: place.id,
+            place_id: place.id, // Add place_id for navigation
             name: place.displayName?.text || "Unknown Hotel",
             address: place.formattedAddress,
             photoUrl,
@@ -120,6 +152,20 @@ export const HotelsPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleHotelClick = (hotel: Hotel) => {
+    navigate(`/hotels/${hotel.place_id}`, {
+      state: {
+        place_id: hotel.place_id,
+        hotelData: {
+          name: hotel.name,
+          address: hotel.address,
+          photos: hotel.photoUrl ? [hotel.photoUrl] : [],
+          rating: hotel.rating,
+        }
+      }
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -174,6 +220,8 @@ export const HotelsPage = () => {
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Input
+              id="hotel-search"
+              name="hotelSearch"
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
@@ -196,12 +244,13 @@ export const HotelsPage = () => {
       <div className="px-4 space-y-3">
         {hotels.length > 0 ? (
           hotels.map((hotel, index) => (
-            <motion.div
+            <motion.button
               key={hotel.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all"
+              onClick={() => handleHotelClick(hotel)}
+              className="w-full bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex gap-3">
                 {/* Image */}
@@ -220,18 +269,18 @@ export const HotelsPage = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1 text-left">
                     {hotel.name}
                   </h3>
                   {hotel.address && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 text-left">
                       {hotel.address}
                     </p>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))
         ) : (
           <div className="text-center py-12">

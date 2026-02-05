@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ interface PetService {
   address?: string;
   photoUrl?: string;
   rating?: number;
+  place_id?: string;
 }
 
 interface ServiceCategory {
@@ -35,6 +36,38 @@ export const PetServicesPage = () => {
   const [services, setServices] = useState<PetService[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('grooming');
+
+  // Load saved search data on component mount
+  useEffect(() => {
+    const savedSearchData = sessionStorage.getItem('petServiceSearchData');
+    if (savedSearchData) {
+      try {
+        const { query, results, category } = JSON.parse(savedSearchData);
+        setSearchQuery(query || "");
+        setServices(results || []);
+        setSelectedCategory(category || 'grooming');
+      } catch (error) {
+        console.error('Error loading saved search data:', error);
+      }
+    }
+
+    // Cleanup function to clear cache when leaving the page
+    return () => {
+      sessionStorage.removeItem('petServiceSearchData');
+    };
+  }, []);
+
+  // Save search data whenever it changes (but only temporarily)
+  useEffect(() => {
+    if (searchQuery || services.length > 0) {
+      const searchData = {
+        query: searchQuery,
+        results: services,
+        category: selectedCategory
+      };
+      sessionStorage.setItem('petServiceSearchData', JSON.stringify(searchData));
+    }
+  }, [searchQuery, services, selectedCategory]);
 
   const searchPetServices = async (location?: { latitude: number; longitude: number }) => {
     if (!searchQuery.trim() && !location) {
@@ -109,6 +142,7 @@ export const PetServicesPage = () => {
           
           return {
             id: place.id,
+            place_id: place.id, // Add place_id for navigation
             name: place.displayName?.text || "Unknown Service",
             address: place.formattedAddress,
             photoUrl,
@@ -133,6 +167,20 @@ export const PetServicesPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleServiceClick = (service: PetService) => {
+    navigate(`/pet-services/${service.place_id}`, {
+      state: {
+        place_id: service.place_id,
+        serviceData: {
+          name: service.name,
+          address: service.address,
+          photos: service.photoUrl ? [service.photoUrl] : [],
+          rating: service.rating,
+        }
+      }
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -187,6 +235,8 @@ export const PetServicesPage = () => {
               <MapPin className={`w-4 h-4 ${isGettingLocation ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Input
+              id="petservices-search"
+              name="petServicesSearch"
               type="text"
               placeholder={isGettingLocation ? "Getting location..." : "Enter city name or use location"}
               value={searchQuery}
@@ -226,12 +276,13 @@ export const PetServicesPage = () => {
       <div className="px-4 space-y-3">
         {services.length > 0 ? (
           services.map((service, index) => (
-            <motion.div
+            <motion.button
               key={service.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all"
+              onClick={() => handleServiceClick(service)}
+              className="w-full bg-muted/50 rounded-2xl p-4 border border-border hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
             >
               <div className="flex gap-3">
                 {/* Image */}
@@ -250,18 +301,18 @@ export const PetServicesPage = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-semibold text-base text-foreground line-clamp-1 text-left">
                     {service.name}
                   </h3>
                   {service.address && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 text-left">
                       {service.address}
                     </p>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))
         ) : (
           <div className="text-center py-12">

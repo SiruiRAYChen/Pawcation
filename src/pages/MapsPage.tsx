@@ -653,6 +653,7 @@ export const MapsPage = () => {
                     Add
                   </Button>
                   <input
+                    id="city-photo-upload"
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"

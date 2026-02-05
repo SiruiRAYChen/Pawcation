@@ -1,3 +1,8 @@
+import { HotelDetail } from "./components/hotel/HotelDetail";
+import { RestaurantDetail } from "./components/restaurant/RestaurantDetail";
+import { OutdoorDetail } from "./components/outdoor/OutdoorDetail";
+import { HospitalDetail } from "./components/hospital/HospitalDetail";
+import { PetServiceDetail } from "./components/petservice/PetServiceDetail";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -54,10 +59,15 @@ const App = () => (
             <Route path="/transit" element={<TransitPage />} />
             <Route path="/transit/:providerId" element={<TransitDetailPage />} />
             <Route path="/hotels" element={<HotelsPage />} />
+            <Route path="/hotels/:place_id" element={<HotelDetail />} />
             <Route path="/hospital" element={<HospitalPage />} />
+            <Route path="/hospital/:place_id" element={<HospitalDetail />} />
             <Route path="/dining" element={<DiningPage />} />
+            <Route path="/dining/:place_id" element={<RestaurantDetail />} />
             <Route path="/outdoor" element={<OutdoorActivityPage />} />
+            <Route path="/outdoor/:place_id" element={<OutdoorDetail />} />
             <Route path="/pet-services" element={<PetServicesPage />} />
+            <Route path="/pet-services/:place_id" element={<PetServiceDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

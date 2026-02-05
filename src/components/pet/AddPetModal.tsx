@@ -648,6 +648,8 @@ export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetM
                 <div className="flex items-center gap-2 mb-4">
                   <div className="flex-1">
                     <Input
+                      id="pet-birth-month"
+                      name="birthMonth"
                       type="text"
                       inputMode="numeric"
                       placeholder="MM"
@@ -678,6 +680,8 @@ export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetM
                   <span className="text-gray-400">/</span>
                   <div className="flex-1">
                     <Input
+                      id="pet-birth-day"
+                      name="birthDay"
                       type="text"
                       inputMode="numeric"
                       placeholder="DD"
@@ -708,6 +712,8 @@ export function AddPetModal({ isOpen, onClose, onPetAdded, editingPet }: AddPetM
                   <span className="text-gray-400">/</span>
                   <div className="flex-1">
                     <Input
+                      id="pet-birth-year"
+                      name="birthYear"
                       type="text"
                       inputMode="numeric"
                       placeholder="YYYY"
