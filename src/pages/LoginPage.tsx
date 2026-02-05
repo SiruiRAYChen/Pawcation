@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, signup, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, signup, signInWithGoogle, isAuthenticated, loading: authLoading } = useAuth();
   
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
@@ -19,7 +19,9 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
+    console.log('[Login] Auth state:', { authLoading, isAuthenticated });
     if (!authLoading && isAuthenticated) {
+      console.log('[Login] ✅ User authenticated, navigating to home...');
       navigate('/');
     }
   }, [authLoading, isAuthenticated, navigate]);
@@ -77,6 +79,21 @@ export default function LoginPage() {
         setError(signupErr.message || 'Quick login failed');
       }
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    console.log('[Login] Google sign-in button clicked');
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      console.log('[Login] Google sign-in completed, auth state should update...');
+      // User will be redirected by the useEffect when isAuthenticated becomes true
+    } catch (err: any) {
+      console.error('[Login] ❌ Google sign-in error:', err);
+      setError(err.message || 'Google sign-in failed');
       setLoading(false);
     }
   };
@@ -214,6 +231,39 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+
+            {/* Google Sign-In */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full h-10 mt-3 rounded-lg border-border hover:bg-muted/50 transition-colors text-sm"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-4 h-4 mr-2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M12 10.2v3.6h5.1c-.2 1.3-1.6 3.8-5.1 3.8-3.1 0-5.6-2.6-5.6-5.8s2.5-5.8 5.6-5.8c1.8 0 3 .8 3.6 1.4l2.4-2.3C16.6 3.8 14.5 3 12 3 7.6 3 4 6.6 4 11s3.6 8 8 8c4.6 0 7.6-3.2 7.6-7.7 0-.5-.1-.9-.2-1.1H12z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M6.1 14.1l-2.8 2.1C4.8 19.1 8.1 21 12 21c2.1 0 3.9-.7 5.2-1.9l-2.5-2c-.7.5-1.7.9-2.7.9-2.1 0-3.9-1.4-4.6-3.3z"
+                />
+                <path
+                  fill="#4A90E2"
+                  d="M3.3 7.8l2.8 2.1C6.6 8 8.1 6.8 12 6.8c1 0 1.9.3 2.6.9l2.5-2.4C16 4 14.1 3.2 12 3.2 8.1 3.2 4.8 5.1 3.3 7.8z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M6.1 14.1c-.2-.6-.3-1.2-.3-1.9s.1-1.3.3-1.9L3.3 8.2C2.8 9.1 2.5 10.2 2.5 12s.3 2.9.8 3.8l2.8-2.1z"
+                />
+              </svg>
+              Continue with Google
+            </Button>
 
             {/* Divider */}
             <div className="relative my-4">
