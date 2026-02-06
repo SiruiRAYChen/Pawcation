@@ -1,4 +1,6 @@
 import { PawIcon } from "@/components/icons/PawIcon";
+import pawPrint from "@/assets/paw-print.png";
+import homeIcon from "@/assets/home.png";
 import { AddPetModal } from "@/components/pet/AddPetModal";
 import { PetCard } from "@/components/pet/PetCard";
 import { Button } from "@/components/ui/button";
@@ -62,7 +64,7 @@ export const ProfileTab = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2"
         >
-          <PawIcon className="w-6 h-6 text-primary" />
+          <img src={homeIcon} alt="Home" className="w-6 h-6" />
           <h1 className="text-2xl font-extrabold text-foreground">My Pets</h1>
         </motion.div>
         <p className="text-muted-foreground mt-1">

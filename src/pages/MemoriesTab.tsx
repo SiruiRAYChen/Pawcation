@@ -1,4 +1,6 @@
 import { PawIcon } from "@/components/icons/PawIcon";
+import pawPrint from "@/assets/paw-print.png";
+import memoryIcon from "@/assets/memory.png";
 import { motion } from "framer-motion";
 import { BookOpen, Map } from "lucide-react";
 import { useState } from "react";
@@ -18,7 +20,7 @@ export const MemoriesTab = () => {
           className="flex items-center justify-between mb-4"
         >
           <div className="flex items-center gap-2">
-            <PawIcon className="w-6 h-6 text-primary" />
+            <img src={memoryIcon} alt="Memory" className="w-6 h-6" />
             <h1 className="text-2xl font-extrabold text-foreground">Memories</h1>
           </div>
         </motion.div>

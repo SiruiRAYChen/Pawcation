@@ -41,15 +41,6 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                     : "text-muted-foreground"
                 }`}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 flex items-center justify-center"
-                    transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-                  >
-                    <PawIcon className="w-10 h-10 text-primary/20" />
-                  </motion.div>
-                )}
                 <Icon className="w-5 h-5 relative z-10" />
               </motion.div>
               <span

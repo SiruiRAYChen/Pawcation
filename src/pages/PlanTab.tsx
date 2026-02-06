@@ -1,5 +1,7 @@
 import heroDog from "@/assets/dog-flight.png";
 import roadDog from "@/assets/dog-road-trip.png";
+import pawPrint from "@/assets/paw-print.png";
+import planIcon from "@/assets/plan.png";
 import { PawIcon } from "@/components/icons/PawIcon";
 import { FloatingMemoButton } from "@/components/plan/FloatingMemoButton";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
@@ -317,7 +319,7 @@ export const PlanTab = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 mb-2"
               >
-                <PawIcon className="w-6 h-6 text-primary" />
+                <img src={planIcon} alt="Plan" className="w-6 h-6" />
                 <h1 className="text-2xl font-extrabold text-foreground">Plan</h1>
               </motion.div>
               <p className="text-muted-foreground">
@@ -334,7 +336,7 @@ export const PlanTab = () => {
                   transition={{ type: "spring", bounce: 0.5 }}
                   className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full"
                 >
-                  <PawIcon className="w-4 h-4 text-primary" />
+                  <img src={pawPrint} alt="Paw" className="w-4 h-4" />
                   <span className="text-sm font-semibold text-primary">Pet-First Travel</span>
                 </motion.div>
                 <h1 className="text-3xl font-extrabold text-foreground">

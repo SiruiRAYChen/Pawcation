@@ -1,5 +1,7 @@
 import { ExploreCategory } from "@/components/explore/ExploreCategory";
 import { PawIcon } from "@/components/icons/PawIcon";
+import pawPrint from "@/assets/paw-print.png";
+import exploreIcon from "@/assets/explore.png";
 import { motion } from "framer-motion";
 
 export const ExploreTab = () => {
@@ -12,7 +14,7 @@ export const ExploreTab = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 mb-2"
         >
-          <PawIcon className="w-6 h-6 text-primary" />
+          <img src={exploreIcon} alt="Explore" className="w-6 h-6" />
           <h1 className="text-2xl font-extrabold text-foreground">Explore</h1>
         </motion.div>
         <p className="text-muted-foreground">
