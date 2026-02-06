@@ -2,7 +2,6 @@ import heroDog from "@/assets/dog-flight.png";
 import roadDog from "@/assets/dog-road-trip.png";
 import pawPrint from "@/assets/paw-print.png";
 import planIcon from "@/assets/plan.png";
-import { PawIcon } from "@/components/icons/PawIcon";
 import { FloatingMemoButton } from "@/components/plan/FloatingMemoButton";
 import { ItineraryTimeline } from "@/components/plan/ItineraryTimeline";
 import { PetPackingMemo } from "@/components/plan/PetPackingMemo";
@@ -313,7 +312,7 @@ export const PlanTab = () => {
             className="gradient-hero min-h-screen"
           >
             {/* Header */}
-            <div className="px-4 pt-12 pb-2 safe-top">
+            <div className="px-4 pb-2 safe-top-xl">
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
