@@ -86,7 +86,7 @@ export const PastTripsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-24 px-4 pt-4 safe-top">
+      <div className="pb-24 px-4 pt-4 safe-top">
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-card rounded-2xl p-4 border animate-pulse">
@@ -102,7 +102,7 @@ export const PastTripsPage = () => {
 
   if (pastTrips.length === 0) {
     return (
-      <div className="min-h-screen pb-24 px-4 pt-4 safe-top flex items-center justify-center">
+      <div className="h-full pb-24 px-4 pt-4 safe-top flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <MapPin className="w-10 h-10 text-primary" />
@@ -122,7 +122,7 @@ export const PastTripsPage = () => {
   }
 
   return (
-    <div className="min-h-screen pb-24 px-4 pt-4 safe-top">
+    <div className="pb-24 px-4 pt-4 safe-top">
       <AnimatePresence mode="popLayout">
         {pastTrips.map((trip, index) => {
           const tripPets = getPetsForTrip(trip);
