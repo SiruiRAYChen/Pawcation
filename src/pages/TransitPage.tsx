@@ -20,26 +20,26 @@ const TRANSIT_DATA = [
     "bringfido_url": "https://www.bringfido.com/travel/airline_policies/alaska_airlines/",
     "cabin": {
       "allowed": true,
-      "fee": 100,
+      "fee": 150,
       "max_dimensions": "Hard: 17x11x7.5 in / Soft: 17x11x9.5 in",
       "weight_limit": "None (Must fit under seat)",
-      "notes": [],
+      "notes": ["Fee increased to $150 in 2024/2025."],
       "age_requirement": "Minimum 8 weeks old",
-      "health_certificate": "Required within 10 days of travel for interstate flights",
+      "health_certificate": "Not required for Cabin (Lower 48). Required for Cargo and flights to AK/HI.",
       "vaccine_requirements": ["Rabies vaccination required", "Proof of vaccination required"],
       "breed_restrictions": "None",
-      "booking_requirements": "Must call to reserve pet space at least 48 hours before departure",
+      "booking_requirements": "Must call to reserve pet space. First come, first served.",
       "carrier_requirements": "Must be leak-proof, secure, and properly ventilated"
     },
     "cargo": {
       "allowed": true,
-      "fee": 150,
+      "fee": 200,
       "weight_limit": "150 lbs (Pet + Carrier)",
       "restrictions": "No Brachycephalic (short-nosed) dogs.",
       "temperature_restrictions": "Not available when temps below 45°F or above 85°F at any location",
       "carrier_requirements": "IATA-compliant crate required"
     },
-    "standout_warning": "Alaska is the most pet-friendly, but strict on soft carrier height (9.5\"). Confirm carrier size!"
+    "standout_warning": "Price hike warning: Fee is now $150. Strict on soft carrier height (9.5\"). Confirm carrier size!"
   },
   {
     "id": "amtrak",
@@ -70,23 +70,23 @@ const TRANSIT_DATA = [
     "bringfido_url": "https://www.bringfido.com/travel/airline_policies/delta/",
     "cabin": {
       "allowed": true,
-      "fee": 95,
+      "fee": 150,
       "max_dimensions": "Varies by aircraft (Rec: 18x11x11 in)",
-      "weight_limit": "None",
-      "notes": ["Pet space is first come, first served - cannot be reserved in advance"],
-      "age_requirement": "Minimum 10 weeks old for domestic, 16 weeks for international",
+      "weight_limit": "None (Must fit comfortably)",
+      "notes": ["Pet counts as your Carry-on. You may bring Pet + Personal Item only."],
+      "age_requirement": "Min 8 weeks (Domestic) / 16 weeks (International)",
       "health_certificate": "Not required for domestic; required for international travel",
       "vaccine_requirements": ["Rabies vaccination for international flights"],
-      "breed_restrictions": "No snub-nosed breeds (brachycephalic)",
-      "booking_requirements": "Cannot book online - must call or check in at airport",
+      "breed_restrictions": "No snub-nosed breeds (brachycephalic) in Cargo only. Allowed in Cabin.",
+      "booking_requirements": "First come, first served. Call to add to ticket.",
       "carrier_requirements": "Soft-sided carrier recommended, must fit under seat",
-      "quantity_limit": "Limited to availability, varies by aircraft"
+      "quantity_limit": "Limited to availability (usually 2-4 per flight)"
     },
     "cargo": {
       "allowed": false,
-      "notes": ["Active Military Only or via Delta Cargo shipping service (complex)."]
+      "notes": ["Active Military with orders or via Delta Cargo (complex/embargoes apply)."]
     },
-    "standout_warning": "Pet counts as your carry-on bag. You check in at the Special Service Counter."
+    "standout_warning": "Price jumped to $150. STRICT BAGGAGE RULE: Pet = Carry-on. You can only bring a Personal Item (backpack/purse) with your pet, NO roller bags."
   },
   {
     "id": "american",
@@ -97,21 +97,26 @@ const TRANSIT_DATA = [
       "allowed": true,
       "fee": 150,
       "max_dimensions": "Hard: 19x13x9 in / Soft: 18x11x11 in",
-      "weight_limit": "None (Must stand & turn)",
-      "notes": [],
-      "age_requirement": "Minimum 8 weeks old",
-      "health_certificate": "Required for international travel only",
-      "vaccine_requirements": ["Rabies vaccination required", "Proof must be available upon request"],
-      "breed_restrictions": "No brachycephalic (snub-nosed) breeds",
-      "booking_requirements": "Must be booked at least 48 hours in advance by calling reservations",
+      "weight_limit": "20 lbs (Combined) - STRICTLY ENFORCED",
+      "notes": ["Pet carrier replaces either your carry-on OR personal item (You can bring one other bag)."],
+      "age_requirement": "Min 8 weeks (Domestic) / 16 weeks (International/US Inbound)",
+      "health_certificate": "Not required for domestic cabin travel",
+      "vaccine_requirements": ["Rabies vaccination required"],
+      "breed_restrictions": "None for Cabin (Snub-nosed breeds ARE allowed in cabin)",
+      "booking_requirements": "Must be booked at least 48 hours in advance",
       "carrier_requirements": "Pet must be able to stand and turn around comfortably",
-      "quantity_limit": "Maximum 7 kennels per flight (varies by aircraft)"
+      "quantity_limit": "Maximum 7 kennels per flight"
     },
     "cargo": {
       "allowed": false,
-      "notes": ["Active U.S. Military & State Dept only."]
+      "fee": 200,
+      "notes": [
+        "Checked baggage: Active U.S. Military & State Dept only ($200).",
+        "Air Cargo (PetEmbark): Available to public but complex & expensive."
+      ],
+      "restrictions": "NO Brachycephalic (snub-nosed) breeds in Cargo/Checked."
     },
-    "standout_warning": "Highest fee ($150). Strict rule: Carrier replaces your carry-on luggage, not your personal item."
+    "standout_warning": "HUGE UPDATE: You can now bring a Carry-on Bag + Pet! (Previously pet replaced bag). Strict 20 lb weight limit."
   },
   {
     "id": "southwest",
@@ -122,18 +127,21 @@ const TRANSIT_DATA = [
       "allowed": true,
       "fee": 125,
       "max_dimensions": "18.5x8.5x13.5 in",
-      "weight_limit": "None",
-      "notes": [],
+      "weight_limit": "None (Must fit under seat)",
+      "notes": [
+        "Pet Carrier counts as your Carry-on or Personal item.",
+        "DOMESTIC flights only. NO International flights."
+      ],
       "age_requirement": "Minimum 8 weeks old",
-      "health_certificate": "Not required for domestic travel",
-      "vaccine_requirements": ["No specific requirements for domestic", "Check destination requirements"],
+      "health_certificate": "Not required",
+      "vaccine_requirements": ["No specific requirements (Domestic only)"],
       "breed_restrictions": "None specified",
-      "booking_requirements": "First come, first served - cannot reserve in advance",
+      "booking_requirements": "First come, first served. Pay at ticket counter.",
       "carrier_requirements": "Soft-sided carrier strongly recommended due to low height clearance",
       "quantity_limit": "Maximum 6 pet carriers per flight"
     },
     "cargo": { "allowed": false },
-    "standout_warning": "The carrier height limit (8.5\") is very low! Choose a soft carrier that can squish down."
+    "standout_warning": "Warning: NO International flights. NO flights to/from Hawaii (Inter-island only). Strict 8.5\" height limit!"
   },
   {
     "id": "united",
@@ -142,23 +150,23 @@ const TRANSIT_DATA = [
     "bringfido_url": "https://www.bringfido.com/travel/airline_policies/united_airlines/",
     "cabin": {
       "allowed": true,
-      "fee": 125,
+      "fee": 150,
       "max_dimensions": "Hard: 17.5x12x7.5 in / Soft: 18x11x11 in",
-      "weight_limit": "None",
-      "notes": [],
-      "age_requirement": "Minimum 4 months old",
-      "health_certificate": "Required for all flights",
-      "vaccine_requirements": ["Rabies vaccination required", "Must attach rabies tag to carrier"],
-      "breed_restrictions": "No American Pit Bull Terrier, American Staffordshire Terrier, Staffordshire Bull Terrier, or American Bully",
+      "weight_limit": "None (Must fit comfortably)",
+      "notes": ["Pet carrier counts as your Carry-on bag."],
+      "age_requirement": "Min 8 weeks (Domestic) / 16 weeks (International)",
+      "health_certificate": "Not required for domestic; Required for Int'l",
+      "vaccine_requirements": ["Rabies vaccination required"],
+      "breed_restrictions": "None for Cabin. (Pit Bulls ARE allowed if they fit).",
       "booking_requirements": "Must confirm pet travel at time of booking",
       "carrier_requirements": "Must have room to stand and turn around",
-      "quantity_limit": "Varies by aircraft type"
+      "quantity_limit": "Varies (Usually 2-4 per flight)"
     },
     "cargo": {
       "allowed": false,
-      "notes": ["PetSafe program suspended."]
+      "notes": ["PetSafe suspended for general public. Military/State Dept only."]
     },
-    "standout_warning": "United is strict about breed restrictions even in cabin (No Pit Bulls). Must check-in with agent."
+    "standout_warning": "Warning: On 'Boeing 737 MAX 9' aircraft, under-seat height is only 10 inches! Pit Bulls ARE allowed in cabin now."
   },
   {
     "id": "jetblue",
