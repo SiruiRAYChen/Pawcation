@@ -1,5 +1,3 @@
-import { PawIcon } from "@/components/icons/PawIcon";
-import pawPrint from "@/assets/paw-print.png";
 import homeIcon from "@/assets/home.png";
 import { AddPetModal } from "@/components/pet/AddPetModal";
 import { PetCard } from "@/components/pet/PetCard";
@@ -58,7 +56,7 @@ export const ProfileTab = () => {
   return (
     <div className="min-h-screen pb-24 gradient-hero">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 safe-top">
+      <div className="px-4 pb-4 safe-top-xl">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

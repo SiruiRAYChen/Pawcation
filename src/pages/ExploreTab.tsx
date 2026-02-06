@@ -1,14 +1,12 @@
-import { ExploreCategory } from "@/components/explore/ExploreCategory";
-import { PawIcon } from "@/components/icons/PawIcon";
-import pawPrint from "@/assets/paw-print.png";
 import exploreIcon from "@/assets/explore.png";
+import { ExploreCategory } from "@/components/explore/ExploreCategory";
 import { motion } from "framer-motion";
 
 export const ExploreTab = () => {
   return (
     <div className="min-h-screen pb-24 gradient-hero">
       {/* Header */}
-      <div className="px-4 pt-12 pb-6 safe-top">
+      <div className="px-4 pb-6 safe-top-xl">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

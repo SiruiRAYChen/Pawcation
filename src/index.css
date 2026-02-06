@@ -165,4 +165,8 @@
   .safe-top {
     padding-top: max(1rem, env(safe-area-inset-top));
   }
+
+  .safe-top-xl {
+    padding-top: calc(max(1rem, env(safe-area-inset-top)) + 20px);
+  }
 }

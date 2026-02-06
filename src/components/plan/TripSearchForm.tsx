@@ -1,12 +1,18 @@
 import { PawIcon } from "@/components/icons/PawIcon";
+import { getTripLengthDays, MAX_TRIP_DAYS, validateDateRange } from "@/components/plan/dateRangeUtils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 import { api, Pet } from "@/lib/api";
+import { format, startOfDay } from "date-fns";
 import { motion } from "framer-motion";
-import { Calendar, Car, DollarSign, MapPin, Plane, Sparkles, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Calendar as CalendarIcon, Car, DollarSign, MapPin, Plane, Sparkles, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { DateRange } from "react-day-picker";
 import { PlaceAutocomplete } from "./PlaceAutocomplete";
 
 interface TripSearchFormProps {
@@ -29,9 +35,12 @@ export interface TripSearchData {
 
 export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFormProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [isLoadingPets, setIsLoadingPets] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [formData, setFormData] = useState<TripSearchData>({
     origin: "",
     destination: "",
@@ -44,6 +53,8 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
     travelMode: travelMode,
     budget: 1500,
   });
+
+  const today = useMemo(() => startOfDay(new Date()), []);
 
   useEffect(() => {
     setFormData(prev => ({ ...prev, travelMode }));
@@ -75,6 +86,76 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
     e.preventDefault();
     onSearch(formData);
   };
+
+  const formatDateInput = (date: Date) => format(date, "yyyy-MM-dd");
+
+  const handleDayClick = (day: Date) => {
+    if (day < today) return;
+
+    if (!dateRange?.from || (dateRange.from && dateRange.to)) {
+      setDateRange({ from: day, to: undefined });
+      setFormData({
+        ...formData,
+        startDate: formatDateInput(day),
+        endDate: "",
+      });
+      return;
+    }
+
+    if (dateRange.from && !dateRange.to) {
+      if (day <= dateRange.from) {
+        setDateRange({ from: day, to: undefined });
+        setFormData({
+          ...formData,
+          startDate: formatDateInput(day),
+          endDate: "",
+        });
+        return;
+      }
+
+      const nextRange: DateRange = { from: dateRange.from, to: day };
+      const validation = validateDateRange(nextRange, today, MAX_TRIP_DAYS);
+
+      if (!validation.valid) {
+        if (validation.reason === "too-long") {
+          toast({
+            title: "Trip length limit",
+            description:
+              "Sorry — trips longer than 7 days aren’t supported yet. Please choose a shorter end date.",
+            variant: "destructive",
+          });
+        } else if (validation.reason === "end-not-after-start") {
+          toast({
+            title: "End date required",
+            description: "End date must be after the start date.",
+            variant: "destructive",
+          });
+        }
+
+        setDateRange({ from: dateRange.from, to: undefined });
+        setFormData({
+          ...formData,
+          startDate: formatDateInput(dateRange.from),
+          endDate: "",
+        });
+        return;
+      }
+
+      setDateRange(nextRange);
+      setFormData({
+        ...formData,
+        startDate: formatDateInput(dateRange.from),
+        endDate: formatDateInput(day),
+      });
+    }
+  };
+
+  const rangeLabel = useMemo(() => {
+    if (!dateRange?.from) return "Select your travel dates";
+    if (!dateRange?.to) return `${format(dateRange.from, "MMM d")}`;
+    const days = getTripLengthDays(dateRange.from, dateRange.to);
+    return `${format(dateRange.from, "MMM d")} → ${format(dateRange.to, "MMM d")} (${days} days, inclusive)`;
+  }, [dateRange]);
 
   return (
     <motion.form
@@ -181,25 +262,32 @@ export const TripSearchForm = ({ onSearch, travelMode = "flight" }: TripSearchFo
       )}
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="pl-10 h-12 bg-muted/50 border-border rounded-xl text-sm"
-          />
-        </div>
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            className="pl-10 h-12 bg-muted/50 border-border rounded-xl text-sm"
-          />
-        </div>
+      <div className="space-y-3">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="w-full rounded-xl border border-border bg-muted/50 px-3 py-3 text-left transition-colors hover:bg-muted"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                  <span>Dates</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{rangeLabel}</p>
+              </div>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="center">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onDayClick={handleDayClick}
+              numberOfMonths={isMobile ? 1 : 2}
+              disabled={{ before: today }}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Travelers */}

@@ -1,5 +1,3 @@
-import { PawIcon } from "@/components/icons/PawIcon";
-import pawPrint from "@/assets/paw-print.png";
 import memoryIcon from "@/assets/memory.png";
 import { motion } from "framer-motion";
 import { BookOpen, Map } from "lucide-react";
@@ -13,7 +11,7 @@ export const MemoriesTab = () => {
   return (
     <div className="h-screen flex flex-col pb-16">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 safe-top bg-background border-b">
+      <div className="px-4 pb-4 safe-top-xl bg-background border-b">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -56,7 +54,7 @@ export const MemoriesTab = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         {activeTab === "trips" ? <PastTripsPage /> : <MapsPage />}
       </div>
     </div>

@@ -203,14 +203,17 @@ export const TripDetailPage = () => {
             <h2 className="text-xl font-bold text-foreground">
               Photos {photos.length > 0 && `(${photos.length})`}
             </h2>
-            <Button
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={addPhotoMutation.isPending}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Photo
-            </Button>
+            <div className="text-right">
+              <Button
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={addPhotoMutation.isPending}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Photo
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">Max 10MB</p>
+            </div>
             <input
               id="trip-photo-upload"
               ref={fileInputRef}
@@ -241,6 +244,7 @@ export const TripDetailPage = () => {
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Photos
               </Button>
+              <p className="text-xs text-muted-foreground mt-2">Max file size: 10MB</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
