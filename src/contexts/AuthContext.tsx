@@ -1,12 +1,15 @@
 import { auth, db } from '@/lib/firebase';
 import {
-    createUserWithEmailAndPassword,
-    User as FirebaseUser,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  deleteUser,
+  User as FirebaseUser,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface User {
@@ -25,6 +28,8 @@ interface AuthContextType {
   
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -35,50 +40,112 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Log when component mounts
+  useEffect(() => {
+    console.log('[AuthProvider] Component mounted');
+    return () => console.log('[AuthProvider] Component unmounting');
+  }, []);
+
+  const syncUserFromFirebase = async (firebaseUser: FirebaseUser): Promise<User> => {
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const shouldUpdateProfile =
+        (!!firebaseUser.displayName && !userData.name) ||
+        (!!firebaseUser.photoURL && !userData.avatar_url);
+
+      if (shouldUpdateProfile) {
+        await setDoc(
+          userDocRef,
+          {
+            name: userData.name ?? firebaseUser.displayName ?? null,
+            avatar_url: userData.avatar_url ?? firebaseUser.photoURL ?? null,
+          },
+          { merge: true }
+        );
+      }
+
+      return {
+        user_id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: userData.name ?? firebaseUser.displayName ?? undefined,
+        avatar_url: userData.avatar_url ?? firebaseUser.photoURL ?? undefined,
+      };
+    }
+
+    await setDoc(userDocRef, {
+      email: firebaseUser.email,
+      name: firebaseUser.displayName ?? null,
+      avatar_url: firebaseUser.photoURL ?? null,
+      created_at: new Date(),
+    });
+
+    return {
+      user_id: firebaseUser.uid,
+      email: firebaseUser.email || '',
+      name: firebaseUser.displayName ?? undefined,
+      avatar_url: firebaseUser.photoURL ?? undefined,
+    };
+  };
+
   // Listen to Firebase auth state changes
   useEffect(() => {
+    let isMounted = true;
+
+    console.log('[Auth] Setting up auth state listener...');
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (!isMounted) {
+        console.log('[Auth] Component unmounted during auth state change');
+        return;
+      }
+      
       try {
+        console.log('[Auth] Auth state changed:', firebaseUser?.email || 'null');
         setLoading(true);
+        
         if (firebaseUser) {
-          // Fetch additional user data from Firestore
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
+          console.log('[Auth] User authenticated, syncing...');
+          const nextUser = await syncUserFromFirebase(firebaseUser);
           
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUser({
-              user_id: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              name: userData.name,
-              avatar_url: userData.avatar_url,
-            });
-          } else {
-            // Create user document if it doesn't exist
-            await setDoc(userDocRef, {
-              email: firebaseUser.email,
-              name: null,
-              avatar_url: null,
-              created_at: new Date(),
-            });
-            
-            setUser({
-              user_id: firebaseUser.uid,
-              email: firebaseUser.email || '',
-            });
+          if (isMounted) {
+            console.log('[Auth] ✅ User set:', nextUser.email);
+            setUser(nextUser);
           }
         } else {
-          setUser(null);
+          console.log('[Auth] No user authenticated');
+          if (isMounted) {
+            setUser(null);
+          }
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        setUser(null);
+        console.error('[Auth] ❌ Error in auth state change:', error);
+        if (firebaseUser && isMounted) {
+          // Fallback: set basic user info
+          console.log('[Auth] Using fallback user data');
+          setUser({
+            user_id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName ?? undefined,
+            avatar_url: firebaseUser.photoURL ?? undefined,
+          });
+        } else if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('[Auth] Cleaning up auth listener');
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   // Login with Firebase Auth
@@ -112,6 +179,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Sign in/up with Google
+  const signInWithGoogle = async () => {
+    try {
+      console.log('[Auth] Opening Google sign-in popup...');
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      const result = await signInWithPopup(auth, provider);
+      console.log('[Auth] ✅ Google sign-in successful!');
+      console.log('[Auth] User:', result.user.email);
+      
+      // User state will be updated by onAuthStateChanged
+    } catch (error: any) {
+      console.error('[Auth] ❌ Google sign-in error:', error);
+      console.error('[Auth] Error code:', error.code);
+      
+      // Handle specific error cases
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in cancelled');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Popup blocked by browser. Please allow popups for this site.');
+      } else {
+        throw new Error(error.message || 'Google sign-in failed');
+      }
+    }
+  };
+
+  const deleteAccount = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('No authenticated user');
+      }
+
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await deleteDoc(userDocRef);
+      await deleteUser(currentUser);
+      setUser(null);
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      throw new Error(error.message || 'Failed to delete account');
+    }
+  };
+
   // Logout
   const logout = async () => {
     try {
@@ -139,6 +250,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: !!user,
     login,
     signup,
+    signInWithGoogle,
+    deleteAccount,
     logout,
     updateUser,
   };

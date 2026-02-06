@@ -1,18 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Camera, Edit3 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
+import { motion } from "framer-motion";
+import { ArrowLeft, Camera, Edit3 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, email, updateUser } = useAuth();
+  const { user, email, updateUser, deleteAccount } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,15 +111,19 @@ export const ProfilePage = () => {
     navigate('/home');
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
       'Are you sure you want to delete your account? This action cannot be undone.'
     );
     
     if (confirmed) {
-      // TODO: Implement delete account API
-      console.log('Deleting account...');
-      toast({ title: 'Account deletion not implemented yet' });
+      try {
+        await deleteAccount();
+        toast({ title: 'Account deleted successfully' });
+        navigate('/login');
+      } catch (error: any) {
+        toast({ title: error.message || 'Failed to delete account', variant: 'destructive' });
+      }
     }
   };
 
