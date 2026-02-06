@@ -40,7 +40,6 @@ service firebase.storage {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && 
                       request.auth.uid == userId && 
-                      isImage() && 
                       isValidSize();
     }
   }

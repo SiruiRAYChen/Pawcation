@@ -1,12 +1,12 @@
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -738,18 +738,23 @@ export const MapsPage = () => {
 
               {/* Photos */}
               <div className="flex-1 overflow-y-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">
-                    Photos {cityPhotos.length > 0 && `(${cityPhotos.length})`}
-                  </h3>
-                  <Button
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={addPhotoMutation.isPending}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add
-                  </Button>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">
+                      Photos {cityPhotos.length > 0 && `(${cityPhotos.length})`}
+                    </h3>
+                    <div className="text-right">
+                      <Button
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={addPhotoMutation.isPending}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-0.5">Max 10MB</p>
+                    </div>
+                  </div>
                   <input
                     id="city-photo-upload"
                     ref={fileInputRef}
@@ -771,6 +776,7 @@ export const MapsPage = () => {
                       <Upload className="w-4 h-4 mr-2" />
                       Upload Photos
                     </Button>
+                    <p className="text-xs text-muted-foreground mt-2">Max file size: 10MB</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
