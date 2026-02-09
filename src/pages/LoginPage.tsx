@@ -1,4 +1,4 @@
-import { PawIcon } from "@/components/icons/PawIcon";
+import pawPrint from "@/assets/paw-print.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -114,7 +114,7 @@ export default function LoginPage() {
               transition={{ type: "spring", bounce: 0.5 }}
               className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full mb-3"
             >
-              <PawIcon className="w-4 h-4 text-primary" />
+              <img src={pawPrint} alt="Paw" className="w-4 h-4" />
               <span className="text-xs font-semibold text-primary">Pet-First Travel</span>
             </motion.div>
             <h1 className="text-3xl font-extrabold text-foreground mb-1">
@@ -221,7 +221,7 @@ export default function LoginPage() {
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                   >
-                    <PawIcon className="w-4 h-4" />
+                    <img src={pawPrint} alt="Loading" className="w-4 h-4" />
                   </motion.span>
                 ) : (
                   <>
@@ -283,7 +283,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full h-10 rounded-lg border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors text-sm"
             >
-              <PawIcon className="w-3 h-3 mr-2 text-primary" />
+              <img src={pawPrint} alt="Paw" className="w-3 h-3 mr-2" />
               Quick Demo Login
             </Button>
           </div>
@@ -295,10 +295,10 @@ export default function LoginPage() {
             transition={{ delay: 0.3 }}
             className="text-center mt-4"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-card/50 rounded-lg border border-border/50">
+            {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-card/50 rounded-lg border border-border/50">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
               <span className="text-xs font-medium text-muted-foreground">Backend Ready</span>
-            </div>
+            </div> */}
           </motion.div>
         </motion.div>
       </div>
